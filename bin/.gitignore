@@ -1,0 +1,7 @@
+*
+!.gitignore
+!data/
+!pred/
+!pth/
+!image/
+!run_test.bat

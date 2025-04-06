@@ -1,0 +1,42 @@
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
+
+project(CMakeLibTorch VERSION 1.0.0)
+message(STATUS "[Project] ${PROJECT_NAME}")
+
+include(cmake/InitUCMake.cmake)
+Ubpa_InitUCMake(VERSION 0.6.4)
+
+Ubpa_InitProject()
+
+find_package(Torch REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+
+Ubpa_AddDep(UMBD 5.3.3)
+
+option(Ubpa_Template_UsingSharedLibrary "using shared library" OFF)
+
+set(SolverPath "${PROJECT_SOURCE_DIR}/src/Solver")
+
+function(Ubpa_TorchCopyDll TargetName)
+  # The following code block is suggested to be used on Windows.
+  # According to https://github.com/pytorch/pytorch/issues/25457,
+  # the DLLs need to be copied to avoid memory errors.
+  if (MSVC)
+    file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+    add_custom_command(TARGET "${TargetName}"
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                       ${TORCH_DLLS}
+                       $<TARGET_FILE_DIR:${TargetName}>)
+  endif (MSVC)
+endfunction()
+
+Ubpa_AddSubDirsRec(src)
+
+Ubpa_BuildDoc(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+
+Ubpa_Export(
+  TARGET
+  DIRECTORIES
+    "include"
+)

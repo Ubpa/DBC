@@ -1,0 +1,233 @@
+#pragma once
+#include <torch/torch.h>
+#include <NeuralAidedMBD/Compressor.h>
+#include <NeuralAidedMBD/BC7.h>
+#include <NeuralAidedMBD/Utils.h>
+
+enum class EncodeMode : uint32_t
+{
+	None,
+	BC = 0b1,
+	DTBC = 0b10,
+	All = 0b11,
+};
+
+using std::cout;
+using std::endl;
+using std::string;
+using torch::Tensor;
+using namespace torch::indexing;
+struct NetImpl : torch::nn::Module {
+	NetImpl(int in_channels, int hidden_channels, int num_layers, int out_channels) {
+		_in_channels = in_channels;
+		_hidden_channels = hidden_channels;
+		_num_layers = num_layers;
+		_out_channels = _out_channels;
+
+		layers->push_back(torch::nn::Linear(in_channels, hidden_channels));
+		layers->push_back(torch::nn::ReLU());
+		for (int i = 0; i < num_layers - 2; ++i)
+		{
+			layers->push_back(torch::nn::Linear(hidden_channels, hidden_channels));
+            layers->push_back(torch::nn::ReLU());
+		}
+		layers->push_back(torch::nn::Linear(hidden_channels, out_channels));
+
+		layers = register_module("layers", layers);
+		for (auto m : this->modules(false))
+		{
+			if (m->name() == "torch::nn::BatchNorm2dImpl")
+			{
+				printf("init the batchnorm2d parameters.\n");
+				auto spBatchNorm2d = std::dynamic_pointer_cast<torch::nn::BatchNorm2dImpl>(m);
+				torch::nn::init::constant_(spBatchNorm2d->weight, 1);
+				torch::nn::init::constant_(spBatchNorm2d->bias, 0);
+			}
+			else if (m->name() == "torch::nn::LinearImpl")
+			{
+			  printf("init the Linear parameters.\n");
+			  auto spLinear = std::dynamic_pointer_cast<torch::nn::LinearImpl>(m);
+			 /* torch::nn::init::normal_(spLinear->weight,0,0.01);*/
+			  //torch::nn::init::xavier_uniform_(spLinear->weight);
+			  //torch::nn::init::kaiming_normal_(spLinear->weight, 0, torch::kFanIn, torch::kReLU);
+			  //torch::nn::init::constant_(spLinear->bias, 0);
+			}
+		}
+		//bn1 = register_module("bn1", torch::nn::BatchNorm2d(4));
+		//bn2 = register_module("bn2", torch::nn::BatchNorm2d(4));
+		//fc0 = register_module("fc0", torch::nn::Linear(6, 16));
+		////fc1 = register_module("fc1", torch::nn::Linear(16, 16));
+		//fc2 = register_module("fc2", torch::nn::Linear(16, 8));
+	} 
+	torch::Tensor forward(torch::Tensor x/*[n,c,h,w]*/) {
+		x = x.permute({ 0,2,3,1 });//[n,h,w,c]
+		x = layers->forward(x);
+		x = x.permute({ 0,3,1,2 });//[n,c,h,w]
+		return x;
+	}
+	torch::nn::Linear fc0{ nullptr }, fc1{ nullptr }, fc2{ nullptr }, fc3{ nullptr };
+	torch::nn::BatchNorm2d bn0{ nullptr }, bn1{ nullptr }, bn2{ nullptr };
+	int _in_channels, _hidden_channels, _num_layers, _out_channels;
+	torch::nn::Sequential layers;
+};
+TORCH_MODULE(Net);
+
+inline Tensor TensorToBlock(Tensor tensor/*[n, c, h, w]*/, int block_size)
+{
+	torch::nn::Unfold unfold(torch::nn::UnfoldOptions({ block_size, block_size }).stride(block_size));
+	tensor = unfold(tensor)//[n,c*b*b,L]
+				.reshape({ tensor.size(0),tensor.size(1),block_size * block_size,-1 })//[n,c,b*b,L]
+				.permute({ 0,3,2,1 })
+				.reshape({ -1,block_size * block_size,tensor.size(1) });//[N,b*b,c]
+	return tensor;//[N,b*b,c]
+}
+inline Tensor BlockToTensor(Tensor tensor/*[N, b*b, c]*/, int block_size, torch::IntArrayRef tensor_size/*[n, c, h, w]*/)
+{
+	torch::nn::Fold fold(torch::nn::FoldOptions({ tensor_size[2],tensor_size[3] }, { block_size, block_size }).stride(block_size));
+	tensor = tensor.permute({ 2,1,0 }).reshape({ -1, tensor.size(0) });//[c*b*b, N]
+	tensor = fold(tensor).unsqueeze(0);
+	return tensor;//[n, c, h, w]
+}
+struct FeatureImpl : torch::nn::Module {
+public:
+	FeatureImpl(at::DeviceType device, std::vector<torch::IntArrayRef> feature_size, Compressor* compressor = nullptr)
+	{
+		_device = device;
+		_compressor = compressor;
+		char targetString[256];
+		for (int i = 0; i < feature_size.size(); ++i)
+		{
+			//features.push_back(torch::randn(feature_size[i], torch::TensorOptions().dtype(torch::kFloat32).device(_device).requires_grad(true)));
+			_features.push_back((torch::rand(feature_size[i], torch::TensorOptions().dtype(torch::kFloat32).device(_device)) * 2 - 1).clone().detach().set_requires_grad(true));
+			snprintf(targetString, sizeof(targetString), "feature %d", i);
+			register_parameter(targetString, _features[i], true);
+		}
+		bn0 = register_module("bn0", torch::nn::BatchNorm2d(4));
+	}
+	void SetupScales()
+	{
+		_scales.resize(_features.size());
+		for (int i = 0; i < _features.size(); ++i)
+		{
+			Tensor feature = _features[i].reshape({ _features[i].size(0),_features[i].size(1),-1 });
+			_scales[i] = std::get<0>(torch::max(torch::abs(feature), -1, true)).unsqueeze(-1) + 1e-6; //[1,c,1,1]
+			//cout << "_scales[" << i << "]: " << _scales[i].sizes() << endl << _scales[i] << endl;
+		}
+	}
+	std::vector<Tensor> FeatureScale()
+	{
+		SetupScales();
+
+		std::vector<Tensor> scaledfeatures;
+		scaledfeatures.resize(_features.size());
+		for (int i = 0; i < _features.size(); ++i)
+		{
+			scaledfeatures[i] = _features[i] / _scales[i]; //[1,c,h,w]
+		}
+		return scaledfeatures;
+	}
+	Tensor DTBCcodec(Tensor blockfeature, double noisy)
+	{
+		_compressor->_src = blockfeature;//[N,b*b,c]
+		_compressor->encode(_roundc, 0.f, 1.f);//[N,b*b,c]
+		Tensor edC = _compressor->qdecode(_compressor->getcode(), _roundc, 0.f, noisy);//[N,b*b,c]
+		return edC;//[N,b*b,c]
+	}
+	torch::Tensor forward(torch::Tensor batch_grid/*[n,h,w,2]*/, EncodeMode encdoeMode, double noisy)
+	{
+		std::vector<torch::Tensor> tmp_features = _features; //[1,c,h,w]
+		if (encdoeMode != EncodeMode::None)
+		{
+			tmp_features = FeatureScale();
+			if ((uint32_t)encdoeMode & (uint32_t)EncodeMode::DTBC)
+			{
+				for(auto& feature : tmp_features)
+					feature = TensorToBlock(feature, _BlockSize);//[N,b*b,c]
+				Tensor blockfeature = torch::cat(tmp_features, 0);
+				Tensor DTBC_blockfeature = DTBCcodec(blockfeature, noisy);//[N,b*b,c]:[-1,1]
+				int prefixsum_blockcount = 0;
+				for (int i = 0; i < tmp_features.size(); ++i)
+				{
+					int blockcount = (int)tmp_features[i].size(0);
+					tmp_features[i] = BlockToTensor(DTBC_blockfeature.index({ Slice(prefixsum_blockcount,prefixsum_blockcount + blockcount) }), _BlockSize, _features[i].sizes());//[n, c, h, w]
+					prefixsum_blockcount += blockcount;
+				}
+			}
+
+			if ((uint32_t)encdoeMode & (uint32_t)EncodeMode::BC)
+			{
+				for (auto& feature : tmp_features)
+				{
+					auto dtype = feature.dtype();
+					feature = feature.squeeze().permute({ 1,2,0 });//[h,w,c]:[-1,1]
+					feature = torch::round(torch::clamp((feature + 1) / 2.f, 0.f, 1.f) * 255.f).to(torch::kUInt8);//[h,w,c]:[0,255]
+					feature = Bc7e(feature).to(_device).permute({ 2,0,1 }).unsqueeze(0).to(dtype);//[1,c,h,w]:[0,255]
+					feature = (feature / 255.f) * 2.f - 1.f;//[1,c,h,w]:[-1,1]
+				}
+			}
+
+			for (int i = 0; i < tmp_features.size(); ++i)
+			{
+				Tensor scale = _scales[i];
+				if ((uint32_t)encdoeMode & (uint32_t)EncodeMode::BC)
+					scale = scale.detach();
+				tmp_features[i] = tmp_features[i] * scale;
+			}
+		}
+
+		for (int i = 0; i < tmp_features.size(); ++i)
+		{
+			tmp_features[i] = torch::nn::functional::grid_sample(
+				tmp_features[i].broadcast_to({ batch_grid.size(0),tmp_features[i].size(1),tmp_features[i].size(2),tmp_features[i].size(3) }),
+				batch_grid,
+				torch::nn::functional::GridSampleFuncOptions().mode(torch::kBilinear).padding_mode(torch::kBorder).align_corners(true));//[n,c,h,w]
+		}
+		Tensor batch_feature = torch::cat(tmp_features, 1);//[n,sum_c,h,w]
+		return batch_feature;
+	}
+	std::vector<torch::Tensor> _features;//[1,c,h,w]
+	std::vector<torch::Tensor> _scales;//[1,c,1,1]
+	at::DeviceType _device;
+	torch::nn::BatchNorm2d bn0{ nullptr };
+	Compressor* _compressor;
+	int _BlockSize = 4;
+	int _BlockChannels = 4;
+	float _roundc = 0.f;
+};
+TORCH_MODULE(Feature);
+
+class NeuralMaterial
+{
+public:
+	enum class BatchMode
+	{
+		Rand,
+		MeshGrid,
+	};
+	NeuralMaterial(at::DeviceType device, float lr, DTBC_config config, int pretain, string objectname,int nm_vaild, string Fix_DTBC_best_epoch,string DTBC_best_epoch);
+	~NeuralMaterial() { delete _compressor; }
+	std::tuple<Tensor, Tensor> getBatch(int batch_size, int tile_size, int patch_size, BatchMode batchmode = BatchMode::Rand);
+	void start();
+	void train(Net& model, Feature& feature, torch::optim::Adam* optimizer, torch::nn::MSELoss& loss_fn, int epoch, int batch_size, int print_interval, int eval_interval, EncodeMode encodeMode);
+	void valid(Net& model, Feature& feature, torch::nn::MSELoss& loss_fn, int batch_size, EncodeMode encodeMode);
+	at::DeviceType _device;
+	float _lr;
+	Tensor _train_tex;//[1,c,h,w]
+	DTBC_config _config;
+	Compressor* _compressor;
+	std::vector<string> _data_name;
+	std::vector<int> _data_channel;
+	int _pretain;
+	string _objectname;
+	int _vaild;
+	string _Fix_DTBC_best_epoch;
+	string _DTBC_best_epoch;
+};
+
+class ExponentialLR : public torch::optim::LRScheduler {
+ public:
+	 ExponentialLR(torch::optim::Optimizer& optimizer, float gamma);
+ private:
+  std::vector<double> get_lrs() override;
+  float _gamma;
+};
