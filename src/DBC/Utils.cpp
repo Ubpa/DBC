@@ -1,12 +1,12 @@
-#include <NeuralAidedMBD/Utils.h>
+#include <DBC/Utils.h>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <NeuralAidedMBD/stb_image.h>
+#include <DBC/stb_image.h>
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include <NeuralAidedMBD/stb_image_write.h>
+#include <DBC/stb_image_write.h>
 
 using std::cout;
 using std::endl;

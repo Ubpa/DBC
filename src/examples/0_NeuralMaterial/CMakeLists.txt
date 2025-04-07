@@ -3,7 +3,7 @@ Ubpa_AddTarget(
   MODE EXE
   CXX_STANDARD 17
   LIB
-    Ubpa::CMakeLibTorch_NeuralSolver
-    Ubpa::CMakeLibTorch_MoveDLLs
+    Ubpa::DBC_DBC
+    Ubpa::DBC_MoveDLLs
     "${PROJECT_SOURCE_DIR}/lib/nvtt30205.lib"
 )

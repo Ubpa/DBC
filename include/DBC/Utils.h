@@ -1,9 +1,9 @@
 #pragma once
 #include <UMBD/UMBDSolver.h>
 #include <torch/torch.h>
-#include <NeuralAidedMBD/BC7.h>
-#include <NeuralAidedMBD/BC6.h>
-#include <NeuralAidedMBD/nvtt.h>
+#include <DBC/BC7.h>
+#include <DBC/BC6.h>
+#include <DBC/nvtt.h>
 #include <io.h>
 
 using std::cout;

@@ -1,4 +1,4 @@
-﻿#include "NeuralAidedMBD/stb_image.h"
+﻿#include "DBC/stb_image.h"
 #include <torch/torch.h>
 #include <iostream>
 #include <string>
@@ -8,9 +8,9 @@
 //#include <cassert>
 //#include <typeinfo>
 //#include "tqdm.h"
-#include <NeuralAidedMBD/BC7.h>
-#include <NeuralAidedMBD/Utils.h>
-#include <NeuralAidedMBD/NeuralMaterial.h>
+#include <DBC/BC7.h>
+#include <DBC/Utils.h>
+#include <DBC/NeuralMaterial.h>
 
 //#include <cublas_v2.h>
 using std::cout;

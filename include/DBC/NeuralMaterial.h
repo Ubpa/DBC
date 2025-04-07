@@ -1,9 +1,9 @@
 #pragma once
 #include <torch/torch.h>
-#include <NeuralAidedMBD/Compressor.h>
-#include <NeuralAidedMBD/BC7.h>
-#include <NeuralAidedMBD/BC6.h>
-#include <NeuralAidedMBD/Utils.h>
+#include <DBC/Compressor.h>
+#include <DBC/BC7.h>
+#include <DBC/BC6.h>
+#include <DBC/Utils.h>
 
 using std::cout;
 using std::endl;

@@ -22,7 +22,7 @@ Ubpa_AddTarget(
   PRIVATE_DEFINE
     ${private_defines}
   SOURCE
-    "${PROJECT_SOURCE_DIR}/include/NeuralAidedMBD"
+    "${PROJECT_SOURCE_DIR}/include/DBC"
   INC
     "${PROJECT_SOURCE_DIR}/include"
   LIB

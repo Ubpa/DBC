@@ -1,5 +1,5 @@
-﻿#include <NeuralAidedMBD/Compressor.h>
-#include <NeuralAidedMBD/Utils.h>
+﻿#include <DBC/Compressor.h>
+#include <DBC/Utils.h>
 #include <torch/optim/schedulers/reduce_on_plateau_scheduler.h>
 #include <chrono>
 #include <thread>

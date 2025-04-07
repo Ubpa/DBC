@@ -1,6 +1,6 @@
 #pragma once
 
-#include <NeuralAidedMBD/Compressor.h>
+#include <DBC/Compressor.h>
 
 class BC6 : public Compressor
 {
