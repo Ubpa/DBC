@@ -1,6 +1,6 @@
-message(STATUS "include UbpaBuild.cmake")
+message(STATUS "include CustomBuild.cmake")
 
-function(Ubpa_AddSubDirsRec path)
+function(Custom_AddSubDirsRec path)
   file(GLOB_RECURSE children LIST_DIRECTORIES true ${CMAKE_CURRENT_SOURCE_DIR}/${path}/*)
   set(dirs "")
   list(APPEND children "${CMAKE_CURRENT_SOURCE_DIR}/${path}")
@@ -14,13 +14,13 @@ function(Ubpa_AddSubDirsRec path)
   endforeach()
 endfunction()
 
-function(Ubpa_GetTargetName rst targetPath)
+function(Custom_GetTargetName rst targetPath)
   file(RELATIVE_PATH targetRelPath "${PROJECT_SOURCE_DIR}/src" "${targetPath}")
   string(REPLACE "/" "_" targetName "${PROJECT_NAME}_${targetRelPath}")
   set(${rst} ${targetName} PARENT_SCOPE)
 endfunction()
 
-function(_Ubpa_ExpandSources rst _sources)
+function(_Custom_ExpandSources rst _sources)
   set(tmp_rst "")
   foreach(item ${${_sources}})
     if(IS_DIRECTORY ${item})
@@ -72,7 +72,7 @@ function(_Ubpa_ExpandSources rst _sources)
   set(${rst} ${tmp_rst} PARENT_SCOPE)
 endfunction()
 
-function(Ubpa_AddTarget)
+function(Custom_AddTarget)
   message(STATUS "----------")
 
   set(arglist "")
@@ -144,12 +144,12 @@ function(Ubpa_AddTarget)
   # PCH: precompile headers                            | target_precompile_headers
   
   # test
-  if(ARG_TEST AND NOT "${Ubpa_BuildTest_${PROJECT_NAME}}")
+  if(ARG_TEST AND NOT "${Custom_BuildTest_${PROJECT_NAME}}")
     return()
   endif()
   
   if(ARG_QT)
-    Ubpa_QtBegin()
+    Custom_QtBegin()
   endif()
   
   # sources
@@ -162,9 +162,9 @@ function(Ubpa_AddTarget)
   elseif(NOT "${ARG_ADD_CURRENT_TO}" STREQUAL "NONE")
     message(FATAL_ERROR "ADD_CURRENT_TO [${ARG_ADD_CURRENT_TO}] is not supported")
   endif()
-  _Ubpa_ExpandSources(sources_public ARG_SOURCE_PUBLIC)
-  _Ubpa_ExpandSources(sources_interface ARG_SOURCE_INTERFACE)
-  _Ubpa_ExpandSources(sources_private ARG_SOURCE)
+  _Custom_ExpandSources(sources_public ARG_SOURCE_PUBLIC)
+  _Custom_ExpandSources(sources_interface ARG_SOURCE_INTERFACE)
+  _Custom_ExpandSources(sources_private ARG_SOURCE)
   
   # group
   if(NOT NOT_GROUP)
@@ -191,7 +191,7 @@ function(Ubpa_AddTarget)
   file(RELATIVE_PATH targetRelPath "${PROJECT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/..")
   set(targetFolder "${PROJECT_NAME}/${targetRelPath}")
   
-  Ubpa_GetTargetName(coreTargetName ${CMAKE_CURRENT_SOURCE_DIR})
+  Custom_GetTargetName(coreTargetName ${CMAKE_CURRENT_SOURCE_DIR})
   if(NOT "${ARG_RET_TARGET_NAME}" STREQUAL "")
     set(${ARG_RET_TARGET_NAME} ${coreTargetName} PARENT_SCOPE)
   endif()
@@ -200,80 +200,80 @@ function(Ubpa_AddTarget)
   message(STATUS "- name: ${coreTargetName}")
   message(STATUS "- folder : ${targetFolder}")
   message(STATUS "- mode: ${ARG_MODE}")
-  Ubpa_List_Print(STRS ${sources_private}
+  Custom_List_Print(STRS ${sources_private}
     TITLE  "- sources (private):"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${sources_interface}
+  Custom_List_Print(STRS ${sources_interface}
     TITLE  "- sources interface:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${sources_public}
+  Custom_List_Print(STRS ${sources_public}
     TITLE  "- sources public:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_DEFINE}
+  Custom_List_Print(STRS ${ARG_DEFINE}
     TITLE  "- define (public):"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_DEFINE_PRIVATE}
+  Custom_List_Print(STRS ${ARG_DEFINE_PRIVATE}
     TITLE  "- define interface:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_DEFINE_INTERFACE}
+  Custom_List_Print(STRS ${ARG_DEFINE_INTERFACE}
     TITLE  "- define private:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_LIB}
+  Custom_List_Print(STRS ${ARG_LIB}
     TITLE  "- lib (public):"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_LIB_INTERFACE}
+  Custom_List_Print(STRS ${ARG_LIB_INTERFACE}
     TITLE  "- lib interface:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_LIB_PRIVATE}
+  Custom_List_Print(STRS ${ARG_LIB_PRIVATE}
     TITLE  "- lib private:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_INC}
+  Custom_List_Print(STRS ${ARG_INC}
     TITLE  "- inc (public):"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_INC_INTERFACE}
+  Custom_List_Print(STRS ${ARG_INC_INTERFACE}
     TITLE  "- inc interface:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_INC_PRIVATE}
+  Custom_List_Print(STRS ${ARG_INC_PRIVATE}
     TITLE  "- inc private:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_DEFINE}
+  Custom_List_Print(STRS ${ARG_DEFINE}
     TITLE  "- define (public):"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_DEFINE_INTERFACE}
+  Custom_List_Print(STRS ${ARG_DEFINE_INTERFACE}
     TITLE  "- define interface:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_DEFINE_PRIVATE}
+  Custom_List_Print(STRS ${ARG_DEFINE_PRIVATE}
     TITLE  "- define private:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_C_OPTION}
+  Custom_List_Print(STRS ${ARG_C_OPTION}
     TITLE  "- compile option (public):"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_C_OPTION_INTERFACE}
+  Custom_List_Print(STRS ${ARG_C_OPTION_INTERFACE}
     TITLE  "- compile option interface:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_C_OPTION_PRIVATE}
+  Custom_List_Print(STRS ${ARG_C_OPTION_PRIVATE}
     TITLE  "- compile option private:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_L_OPTION}
+  Custom_List_Print(STRS ${ARG_L_OPTION}
     TITLE  "- link option (public):"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_L_OPTION_INTERFACE}
+  Custom_List_Print(STRS ${ARG_L_OPTION_INTERFACE}
     TITLE  "- link option interface:"
     PREFIX "  * ")
-  Ubpa_List_Print(STRS ${ARG_L_OPTION_PRIVATE}
+  Custom_List_Print(STRS ${ARG_L_OPTION_PRIVATE}
     TITLE  "- link option private:"
     PREFIX "  * ")
   
-  Ubpa_PackageName(package_name)
+  Custom_PackageName(package_name)
   
   set(targetNames "")
 
   # add target
   if("${ARG_MODE}" STREQUAL "EXE")
     add_executable(${coreTargetName})
-    add_executable("Ubpa::${coreTargetName}" ALIAS ${coreTargetName})
+    add_executable("Custom::${coreTargetName}" ALIAS ${coreTargetName})
     if(MSVC)
-      set_target_properties(${coreTargetName} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${Ubpa_RootProjectPath}/bin")
+      set_target_properties(${coreTargetName} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${Custom_RootProjectPath}/bin")
     endif()
     set_target_properties(${coreTargetName} PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
     set_target_properties(${coreTargetName} PROPERTIES MINSIZEREL_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})
@@ -281,22 +281,22 @@ function(Ubpa_AddTarget)
     list(APPEND targetNames ${coreTargetName})
   elseif("${ARG_MODE}" STREQUAL "STATIC")
     add_library(${coreTargetName} STATIC)
-    add_library("Ubpa::${coreTargetName}" ALIAS ${coreTargetName})
+    add_library("Custom::${coreTargetName}" ALIAS ${coreTargetName})
     list(APPEND targetNames ${coreTargetName})
   elseif("${ARG_MODE}" STREQUAL "SHARED")
     add_library(${coreTargetName} SHARED)
-    add_library("Ubpa::${coreTargetName}" ALIAS ${coreTargetName})
+    add_library("Custom::${coreTargetName}" ALIAS ${coreTargetName})
     target_compile_definitions(${coreTargetName} PRIVATE UCMAKE_EXPORT_${coreTargetName})
     list(APPEND targetNames ${coreTargetName})
   elseif("${ARG_MODE}" STREQUAL "INTERFACE")
     add_library(${coreTargetName} INTERFACE)
-    add_library("Ubpa::${coreTargetName}" ALIAS ${coreTargetName})
+    add_library("Custom::${coreTargetName}" ALIAS ${coreTargetName})
     list(APPEND targetNames ${coreTargetName})
   elseif("${ARG_MODE}" STREQUAL "STATIC_AND_SHARED")
     add_library(${coreTargetName}_static STATIC)
-    add_library("Ubpa::${coreTargetName}_static" ALIAS ${coreTargetName}_static)
+    add_library("Custom::${coreTargetName}_static" ALIAS ${coreTargetName}_static)
     add_library(${coreTargetName}_shared SHARED)
-    add_library("Ubpa::${coreTargetName}_shared" ALIAS ${coreTargetName}_shared)
+    add_library("Custom::${coreTargetName}_shared" ALIAS ${coreTargetName}_shared)
     target_compile_definitions(${coreTargetName}_static PUBLIC UCMAKE_STATIC_${coreTargetName})
     target_compile_definitions(${coreTargetName}_shared PRIVATE UCMAKE_EXPORT_${coreTargetName})
     list(APPEND targetNames ${coreTargetName}_static ${coreTargetName}_shared)
@@ -470,7 +470,7 @@ function(Ubpa_AddTarget)
   endforeach()
   
   if(ARG_QT)
-    Ubpa_QtEnd()
+    Custom_QtEnd()
   endif()
   
   message(STATUS "----------")

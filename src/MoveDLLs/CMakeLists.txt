@@ -1,8 +1,8 @@
 set(TargetName "UNKNOWN")
-Ubpa_AddTarget(
+Custom_AddTarget(
   MODE STATIC
   RET_TARGET_NAME TargetName
   LIB
     "${TORCH_LIBRARIES}"
 )
-Ubpa_TorchCopyDll(${TargetName})
+Custom_TorchCopyDll(${TargetName})

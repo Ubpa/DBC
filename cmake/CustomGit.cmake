@@ -1,18 +1,18 @@
 # ----------------------------------------------------------------------------
 #
-# Ubpa_InitGit()
+# Custom_InitGit()
 # - find git [required]
 #
 # ----------------------------------------------------------------------------
 #
-# Ubpa_UpdateSubModule()
+# Custom_UpdateSubModule()
 # - update submodule
 #
 # ----------------------------------------------------------------------------
 
-message(STATUS "include UbpaGit.cmake")
+message(STATUS "include CustomGit.cmake")
 
-macro(Ubpa_InitGit)
+macro(Custom_InitGit)
   message(STATUS "----------")
   find_package(Git REQUIRED)
   message(STATUS "GIT_FOUND: ${GIT_FOUND}")
@@ -20,9 +20,9 @@ macro(Ubpa_InitGit)
   message(STATUS "GIT_VERSION_STRING: ${GIT_VERSION_STRING}")
 endmacro()
 
-function(Ubpa_UpdateSubModule)
+function(Custom_UpdateSubModule)
   if(NOT GIT_FOUND)
-    message(FATAL_ERROR "you should call Ubpa_InitGit() before calling Ubpa_UpdateSubModule()")
+    message(FATAL_ERROR "you should call Custom_InitGit() before calling Custom_UpdateSubModule()")
   endif()
   execute_process(
     COMMAND ${GIT_EXECUTABLE} submodule init

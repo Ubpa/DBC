@@ -1,20 +1,20 @@
 # ----------------------------------------------------------------------------
 #
-# Ubpa_AddDep(<dep-list>)
+# Custom_AddDep(<dep-list>)
 #
 # ----------------------------------------------------------------------------
 #
-# Ubpa_Export([INC <inc>])
+# Custom_Export([INC <inc>])
 # - export some files
 # - inc: default ON, install include/
 #
 # ----------------------------------------------------------------------------
 
-message(STATUS "include UbpaPackage.cmake")
+message(STATUS "include CustomPackage.cmake")
 
-set(Ubpa_${PROJECT_NAME}_have_dependencies FALSE)
+set(Custom_${PROJECT_NAME}_have_dependencies FALSE)
 
-function(Ubpa_DecodeVersion major minor patch version)
+function(Custom_DecodeVersion major minor patch version)
   if("${version}" MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)")
     set(${major} "${CMAKE_MATCH_1}" PARENT_SCOPE)
     set(${minor} "${CMAKE_MATCH_2}" PARENT_SCOPE)
@@ -30,20 +30,20 @@ function(Ubpa_DecodeVersion major minor patch version)
   endif()
 endfunction()
 
-function(Ubpa_ToPackageName rst name version)
+function(Custom_ToPackageName rst name version)
   set(tmp "${name}.${version}")
   string(REPLACE "." "_" tmp ${tmp})
   set(${rst} ${tmp} PARENT_SCOPE)
 endfunction()
 
-function(Ubpa_PackageName rst)
-  Ubpa_ToPackageName(tmp ${PROJECT_NAME} ${PROJECT_VERSION})
+function(Custom_PackageName rst)
+  Custom_ToPackageName(tmp ${PROJECT_NAME} ${PROJECT_VERSION})
   set(${rst} ${tmp} PARENT_SCOPE)
 endfunction()
 
-macro(Ubpa_AddDepPro projectName name version)
-  set(Ubpa_${projectName}_have_dependencies TRUE)
-  list(FIND Ubpa_${projectName}_dep_name_list "${name}" _idx)
+macro(Custom_AddDepPro projectName name version)
+  set(Custom_${projectName}_have_dependencies TRUE)
+  list(FIND Custom_${projectName}_dep_name_list "${name}" _idx)
   if(_idx EQUAL -1)
     message(STATUS "start add dependence ${name} ${version}")
     set(_need_find TRUE)
@@ -58,14 +58,14 @@ macro(Ubpa_AddDepPro projectName name version)
     endif()
   endif()
   if(_need_find)
-    list(APPEND Ubpa_${projectName}_dep_name_list ${name})
-    list(APPEND Ubpa_${projectName}_dep_version_list ${version})
+    list(APPEND Custom_${projectName}_dep_name_list ${name})
+    list(APPEND Custom_${projectName}_dep_version_list ${version})
     message(STATUS "find package: ${name} ${version}")
     find_package(${name} ${version} QUIET)
     if(${${name}_FOUND})
       message(STATUS "${name} ${${name}_VERSION} found")
     else()
-      set(_address "https://github.com/Ubpa/${name}")
+      set(_address "https://github.com/Custom/${name}")
       message(STATUS "${name} ${version} not found")
       message(STATUS "fetch: ${_address} with tag ${version}")
       FetchContent_Declare(
@@ -79,22 +79,22 @@ macro(Ubpa_AddDepPro projectName name version)
   endif()
 endmacro()
 
-macro(Ubpa_AddDep name version)
-  Ubpa_AddDepPro(${PROJECT_NAME} ${name} ${version})
+macro(Custom_AddDep name version)
+  Custom_AddDepPro(${PROJECT_NAME} ${name} ${version})
 endmacro()
 
-macro(Ubpa_Export)
+macro(Custom_Export)
   cmake_parse_arguments("ARG" "TARGET;CPM" "" "DIRECTORIES" ${ARGN})
   
-  Ubpa_PackageName(package_name)
+  Custom_PackageName(package_name)
   message(STATUS "export ${package_name}")
 
-  set(UBPA_PACKAGE_INIT "
+  set(Custom_PACKAGE_INIT "
 get_filename_component(include_dir \"\${CMAKE_CURRENT_LIST_DIR}/../include\" ABSOLUTE)
 include_directories(\"\${include_dir}\")\n")
   
-  if(ARG_CPM OR Ubpa_${PROJECT_NAME}_have_dependencies)
-    set(UBPA_PACKAGE_INIT "${UBPA_PACKAGE_INIT}
+  if(ARG_CPM OR Custom_${PROJECT_NAME}_have_dependencies)
+    set(Custom_PACKAGE_INIT "${Custom_PACKAGE_INIT}
 if(NOT FetchContent_FOUND)
   include(FetchContent)
 endif()
@@ -102,12 +102,12 @@ if(NOT UCMake_FOUND)
   message(STATUS \"find package: UCMake ${UCMake_VERSION}\")
   find_package(UCMake ${UCMake_VERSION} EXACT QUIET)
   if(NOT UCMake_FOUND)
-    set(_Ubpa_UCMake_address \"https://github.com/Ubpa/UCMake\")
+    set(_Custom_UCMake_address \"https://github.com/Custom/UCMake\")
     message(STATUS \"UCMake ${UCMake_VERSION} not found\")
-    message(STATUS \"fetch: \${_Ubpa_UCMake_address} with tag \${UCMake_VERSION}\")
+    message(STATUS \"fetch: \${_Custom_UCMake_address} with tag \${UCMake_VERSION}\")
     FetchContent_Declare(
       UCMake
-      GIT_REPOSITORY \${_Ubpa_UCMake_address}
+      GIT_REPOSITORY \${_Custom_UCMake_address}
       GIT_TAG ${UCMake_VERSION}
     )
     FetchContent_MakeAvailable(UCMake)
@@ -117,16 +117,16 @@ endif()
 "
     )
     
-    list(LENGTH Ubpa_${PROJECT_NAME}_dep_name_list _dep_num)
+    list(LENGTH Custom_${PROJECT_NAME}_dep_name_list _dep_num)
     if(_dep_num GREATER 0)
       message(STATUS "[Dependencies]")
-      list(LENGTH Ubpa_${PROJECT_NAME}_dep_name_list _dep_num)
+      list(LENGTH Custom_${PROJECT_NAME}_dep_name_list _dep_num)
       math(EXPR _stop "${_dep_num}-1")
       foreach(index RANGE ${_stop})
-        list(GET Ubpa_${PROJECT_NAME}_dep_name_list ${index} dep_name)
-        list(GET Ubpa_${PROJECT_NAME}_dep_version_list ${index} dep_version)
+        list(GET Custom_${PROJECT_NAME}_dep_name_list ${index} dep_name)
+        list(GET Custom_${PROJECT_NAME}_dep_version_list ${index} dep_version)
         message(STATUS "- ${dep_name} ${dep_version}")
-        string(APPEND UBPA_PACKAGE_INIT "Ubpa_AddDepPro(${PROJECT_NAME} ${dep_name} ${dep_version})\n")
+        string(APPEND Custom_PACKAGE_INIT "Custom_AddDepPro(${PROJECT_NAME} ${dep_name} ${dep_version})\n")
       endforeach()
     endif()
   endif()
@@ -135,14 +135,14 @@ endif()
     # generate the export targets for the build tree
     # needs to be after the install(TARGETS) command
     export(EXPORT "${PROJECT_NAME}Targets"
-      NAMESPACE "Ubpa::"
+      NAMESPACE "Custom::"
       #FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Targets.cmake"
     )
     
     # install the configuration targets
     install(EXPORT "${PROJECT_NAME}Targets"
       FILE "${PROJECT_NAME}Targets.cmake"
-      NAMESPACE "Ubpa::"
+      NAMESPACE "Custom::"
       DESTINATION "${package_name}/cmake"
     )
   endif()

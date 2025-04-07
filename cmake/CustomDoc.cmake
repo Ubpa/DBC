@@ -1,4 +1,4 @@
-function(Ubpa_BuildDoc doxyfilein)
+function(Custom_BuildDoc doxyfilein)
   # call configure_file
   # output: docs
   if(TARGET Doxygen::doxygen)

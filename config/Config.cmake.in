@@ -4,7 +4,7 @@ find_package(Ceres REQUIRED)
 
 @PACKAGE_INIT@
 
-@UBPA_PACKAGE_INIT@
+@Custom_PACKAGE_INIT@
 
 include ( "${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake" )
 

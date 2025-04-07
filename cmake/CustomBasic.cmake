@@ -1,6 +1,6 @@
 # ----------------------------------------------------------------------------
 #
-# Ubpa_List_Print(STRS <string-list> [TITLE <title>] [PREFIX <prefix>])
+# Custom_List_Print(STRS <string-list> [TITLE <title>] [PREFIX <prefix>])
 # - print:
 #          <title>
 #          <prefix>item0
@@ -9,18 +9,18 @@
 #
 # ----------------------------------------------------------------------------
 #
-# Ubpa_GetDirName(<result-name>)
+# Custom_GetDirName(<result-name>)
 # - get current directory name
 #
 # ----------------------------------------------------------------------------
 #
-# Ubpa_Path_Back(<rst> <path> <times>
+# Custom_Path_Back(<rst> <path> <times>
 #
 # ----------------------------------------------------------------------------
 
-message(STATUS "include UbpaBasic.cmake")
+message(STATUS "include CustomBasic.cmake")
 
-function(Ubpa_List_Print)
+function(Custom_List_Print)
   cmake_parse_arguments("ARG" "" "TITLE;PREFIX" "STRS" ${ARGN})
   list(LENGTH ARG_STRS strsLength)
   if(NOT strsLength)
@@ -34,12 +34,12 @@ function(Ubpa_List_Print)
   endforeach()
 endfunction()
 
-function(Ubpa_GetDirName dirName)
+function(Custom_GetDirName dirName)
   string(REGEX MATCH "([^/]*)$" TMP ${CMAKE_CURRENT_SOURCE_DIR})
   set(${dirName} ${TMP} PARENT_SCOPE)
 endfunction()
 
-function(Ubpa_Path_Back rst path times)
+function(Custom_Path_Back rst path times)
   math(EXPR stop "${times}-1")
   set(curPath ${path})
   foreach(index RANGE ${stop})

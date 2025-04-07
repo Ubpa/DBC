@@ -1,8 +1,8 @@
 set(mode "")
 set(private_defines "")
-if(Ubpa_UMBD_UsingSharedLibrary)
+if(Custom_UMBD_UsingSharedLibrary)
   set(mode SHARED)
-  list(APPEND private_defines "UBPA_UMBD_BUILDING_SHARED_LIBRARY")
+  list(APPEND private_defines "Custom_UMBD_BUILDING_SHARED_LIBRARY")
 else()
   set(mode STATIC)
 endif()
@@ -16,7 +16,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   #
 endif()
 
-Ubpa_AddTarget(
+Custom_AddTarget(
   MODE ${mode}
   CXX_STANDARD 17
   PRIVATE_DEFINE

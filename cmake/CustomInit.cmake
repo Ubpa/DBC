@@ -2,22 +2,22 @@
 # 2. debug postfix
 # 3. C++ 17
 # 4. install prefix
-# 5. set Ubpa_BuildTest_${PROJECT_NAME}
+# 5. set Custom_BuildTest_${PROJECT_NAME}
 # 6. output directory
 # 7. use folder
 
-message(STATUS "include UbpaInit.cmake")
+message(STATUS "include CustomInit.cmake")
 
-include("${CMAKE_CURRENT_LIST_DIR}/UbpaBasic.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/UbpaBuild.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/UbpaDownload.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/UbpaGit.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/UbpaPackage.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/UbpaQt.cmake")
-include("${CMAKE_CURRENT_LIST_DIR}/UbpaDoc.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CustomBasic.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CustomBuild.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CustomDownload.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CustomGit.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CustomPackage.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CustomQt.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/CustomDoc.cmake")
 
-#Ubpa_DownloadFile(
-#  https://cdn.jsdelivr.net/gh/Ubpa/UData@master/UCMake/CPM/CPM_3b40429.cmake
+#Custom_DownloadFile(
+#  https://cdn.jsdelivr.net/gh/Custom/UData@master/UCMake/CPM/CPM_3b40429.cmake
 #  "${CMAKE_CURRENT_LIST_DIR}/CPM.cmake"
 #  SHA256 438E319D455FD96E18F6CAD9DF596FCD5C9CA3590B1B2EDFA01AF7809CD7BEC7
 #)
@@ -26,7 +26,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/CPM.cmake")
 
 # ---------------------------------------------------------
 
-macro(Ubpa_InitProject)
+macro(Custom_InitProject)
   set(CMAKE_DEBUG_POSTFIX "d")
   set(CMAKE_RELEASE_POSTFIX "")
   set(CMAKE_MINSIZEREL_POSTFIX "msr")
@@ -77,27 +77,27 @@ macro(Ubpa_InitProject)
   message(STATUS "CXX_STANDARD: ${CMAKE_CXX_STANDARD}")
   
   if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    Ubpa_Path_Back(root ${CMAKE_INSTALL_PREFIX} 1)
-    set(CMAKE_INSTALL_PREFIX "${root}/Ubpa" CACHE PATH "install prefix" FORCE)
+    Custom_Path_Back(root ${CMAKE_INSTALL_PREFIX} 1)
+    set(CMAKE_INSTALL_PREFIX "${root}/Custom" CACHE PATH "install prefix" FORCE)
   endif()
   
-  set("Ubpa_BuildTest_${PROJECT_NAME}" TRUE CACHE BOOL "build tests for ${PROJECT_NAME}")
+  set("Custom_BuildTest_${PROJECT_NAME}" TRUE CACHE BOOL "build tests for ${PROJECT_NAME}")
   
-  if(NOT Ubpa_RootProjectPath)
-    set(Ubpa_RootProjectPath ${PROJECT_SOURCE_DIR})
+  if(NOT Custom_RootProjectPath)
+    set(Custom_RootProjectPath ${PROJECT_SOURCE_DIR})
   endif()
   
-  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${Ubpa_RootProjectPath}/bin")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${Custom_RootProjectPath}/bin")
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${Ubpa_RootProjectPath}/lib")
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${Custom_RootProjectPath}/lib")
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
-  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${Ubpa_RootProjectPath}/bin")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${Custom_RootProjectPath}/bin")
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
@@ -105,8 +105,8 @@ macro(Ubpa_InitProject)
   
   set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-  option(Ubpa_${CMAKE_PROJECT_NAME}_BuildDoc "Build Doc (need Doxygen)" OFF)
-  if(Ubpa_${CMAKE_PROJECT_NAME}_BuildDoc)
+  option(Custom_${CMAKE_PROJECT_NAME}_BuildDoc "Build Doc (need Doxygen)" OFF)
+  if(Custom_${CMAKE_PROJECT_NAME}_BuildDoc)
     find_package(Doxygen REQUIRED)
   else()
     message(STATUS "Not build doc")

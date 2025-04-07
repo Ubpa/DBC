@@ -4,14 +4,14 @@ project(DBC VERSION 1.0.0)
 message(STATUS "[Project] ${PROJECT_NAME}")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-include(UbpaInit)
+include(CustomInit)
 
-Ubpa_InitProject()
+Custom_InitProject()
 
 find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-function(Ubpa_TorchCopyDll TargetName)
+function(Custom_TorchCopyDll TargetName)
   # The following code block is suggested to be used on Windows.
   # According to https://github.com/pytorch/pytorch/issues/25457,
   # the DLLs need to be copied to avoid memory errors.
@@ -25,4 +25,4 @@ function(Ubpa_TorchCopyDll TargetName)
   endif (MSVC)
 endfunction()
 
-Ubpa_AddSubDirsRec(src)
+Custom_AddSubDirsRec(src)
