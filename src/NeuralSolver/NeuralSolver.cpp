@@ -136,7 +136,6 @@ bool FNerualFirstOrderFunction::Evaluate(const double* const parameters, double*
 	//GetScaleGradCTex(tensorGradC2, GridC, Data.BlockSize, L, Data.device, "ScaleGradC/ScaleGradC_", Data.Iterations, false);
 	BlockToTex(GradTexC, tensorGradC, Data.BlockSize, L);
 	//GetGradCTex(GradTexC, "GradC/GradC_BC1_", Data.Iterations);
-	*cost += this->Data.Compressor->_lossqsum;
 	UMBD::FFirstOrderFunction::EvaluateNorm(parameters, cost, gradient);
 	return true;
 }

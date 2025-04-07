@@ -15,6 +15,8 @@
 #include "rdo_bc_encoder.h"
 #include <NeuralAidedMBD/Utils.h>
 #include <NeuralAidedMBD/NeuralMaterial.h>
+#include <NeuralAidedMBD/RGBM.h>
+
 //#include <cublas_v2.h>
 using std::cout;
 using std::endl;
@@ -55,12 +57,11 @@ UMBD::FCompressedData MBDSolve(const UMBD::FSolverConfig& config, const UMBD::FT
 		//UMBD::SaveCompressedData(compressedData, ("MBD_"+std::to_string(NonOptimizeConfig.MaxNumIterations) + ".bin").c_str());
 
 		UMBD::FCeresSolver BasicSolver;
-		UMBD::FFirstOrderFunction* mbdf = BasicSolver.CreateFirstOrderFunction(0.0, ThetaWeights.data(), nullptr, nullptr, false, &f, GridB, GridC, L, D, false);
+		UMBD::FFirstOrderFunction* mbdf = BasicSolver.CreateFirstOrderFunction(1.0, ThetaWeights.data(), nullptr, nullptr, false, &f, GridB, GridC, L, D, false);
 		
 		//solver.FunctionData.Compressor->MBDOptim(compressedData, mbdf, f);
 		//solver.FunctionData.Compressor->BC1DOptim(compressedData, mbdf, f);
 		solver.FunctionData.Compressor->BCOptim(compressedData, mbdf, f);
-		//solver.FunctionData.Compressor->BC7DOptim(compressedData, mbdf, f);
 
 		BasicSolver.DestroyFirstOrderFunction(mbdf);
 	}
@@ -104,7 +105,7 @@ UMBD::FCompressedData MBDSolve(const UMBD::FSolverConfig& config, const UMBD::FT
 		GetCTex(compressedData,"CTexCom");
 #else
 		UMBD::FTex3D& ParamTexC = compressedData.GetC();
-		Bc7e(ParamTexC);
+		nvtt_bc7(ParamTexC);
 		GetCTex(compressedData,"CTexCom");
 #endif
 	}
@@ -120,7 +121,7 @@ UMBD::FCompressedData MBDSolve(const UMBD::FSolverConfig& config, const UMBD::FT
 	return compressedData;
 }
 
-void TestNeuralSolver(int refinecount, int epoch, float lr, Compressor::QuantizeMode quantizeMode, Compressor::OptimizeMode optimizeMode, BC7::Mode7Type mode7Type)
+void TestNeuralSolver(int epoch, float lr, Compressor::QuantizeMode quantizeMode, Compressor::OptimizeMode optimizeMode, BC7::Mode7Type mode7Type, int Ns, int Nr)
 {
 	UCommon::FThreadPool ThreadPool;
 	UCommon::FThreadPoolRegistry::GetInstance().Register(&ThreadPool);
@@ -141,11 +142,11 @@ void TestNeuralSolver(int refinecount, int epoch, float lr, Compressor::Quantize
 	NeuralSolver.FunctionData.BlockSize = 4;
 
 	//BC1
-	//NeuralSolver.FunctionData.Compressor = new BC1(device, refinecount,epoch,lr);
+	//NeuralSolver.FunctionData.Compressor = new BC1(device, epoch, lr);
 	//const uint64_t L = 3;
 
 	//BC7
-	NeuralSolver.FunctionData.Compressor = new BC7(device, refinecount, epoch, lr, use_mode4567, quantizeMode, optimizeMode, mode7Type);
+	NeuralSolver.FunctionData.Compressor = new BC7(device, epoch, lr, use_mode4567, quantizeMode, optimizeMode, mode7Type, Ns, Nr);
 	const uint64_t L = 4;
 
 	//UMBD::FTex3D f = UMBD::LoadTex3D("TexFOutFile.bin");
@@ -231,7 +232,7 @@ void TestNeuralSolver(int refinecount, int epoch, float lr, Compressor::Quantize
 	UCommon::FThreadPoolRegistry::GetInstance().Deregister();
 }
 
-void Test(int refinecount, int epoch, float lr, Compressor::QuantizeMode quantizeMode, Compressor::OptimizeMode optimizeMode, BC7::Mode7Type mode7Type)
+void Test(int epoch, float lr, Compressor::QuantizeMode quantizeMode, Compressor::OptimizeMode optimizeMode, BC7::Mode7Type mode7Type)
 {
 	Tensor data = torch::zeros(at::IntArrayRef({ 16,4 }), torch::TensorOptions().dtype(torch::kFloat).requires_grad(false));
 	for (int i = 0; i < 16; ++i)
@@ -275,8 +276,8 @@ void Test(int refinecount, int epoch, float lr, Compressor::QuantizeMode quantiz
 	bool use_mode456[8] = { 0,0,0,0,1,1,1,0 };
 	bool use_mode7[8] = { 0,0,0,0,0,0,0,1 };
 	bool use_mode6[8] = { 0,0,0,0,0,0,1,0 };
-	BC7 enc = BC7(device, refinecount, epoch, lr, use_mode7, quantizeMode, optimizeMode, mode7Type);
-	//BC1 enc = BC1(device, refinecount,epoch, lr);
+	BC7 enc = BC7(device, epoch, lr, use_mode7, quantizeMode, optimizeMode, mode7Type);
+	//BC1 enc = BC1(device, epoch, lr);
 	//target = enc.forward(target).clone().detach();
 	//cout << target * 255 << endl;
 	for (int i = 0; i < epoch; ++i)
@@ -311,50 +312,6 @@ void Test(int refinecount, int epoch, float lr, Compressor::QuantizeMode quantiz
 	}
 }
 
-void RGBMOptim(int refinecount, int epoch, float lr, Compressor::QuantizeMode quantizeMode, Compressor::OptimizeMode optimizeMode, BC7::Mode7Type mode7Type)
-{
-
-	bool use_mode4[8] = { 0,0,0,0,1,0,0,0 };
-	bool use_mode5[8] = { 0,0,0,0,0,1,0,0 };
-	bool use_mode6[8] = { 0,0,0,0,0,0,1,0 };
-	bool use_mode7[8] = { 0,0,0,0,0,0,0,1 };
-	bool use_mode45[8] = { 0,0,0,0,1,1,0,0 };
-	bool use_mode456[8] = { 0,0,0,0,1,1,1,0 };
-	bool use_mode4567[8] = { 0,0,0,0,1,1,1,1 };
-
-	FNeuralSolver NeuralSolver;
-	NeuralSolver.FunctionData.device = device;
-	NeuralSolver.FunctionData.BlockSize = 4;
-
-	//BC1
-	//NeuralSolver.FunctionData.Compressor = new BC1(device, refinecount,epoch,lr);
-
-	//BC7
-	Compressor* compressor = new BC7(device, refinecount, epoch, lr, use_mode4567, quantizeMode, optimizeMode, mode7Type);
-	stbi_set_flip_vertically_on_load(true);
-	int width, height, nrComponents;
-	std::string strHDRName = "dry_orchard_meadow_1k.hdr";
-	float* data = stbi_loadf(strHDRName.c_str(), &width, &height, &nrComponents, 0);
-	//float* tensor_data = new float[width * height * nrComponents];
-	//for (int i = 0; i < height; ++i)
-	//	for (int j = 0; j < width; ++j)
-	//	{
-	//		for (int k = 0; k < nrComponents; ++k)
-	//		{
-	//			int pixel_index = i * (width * nrComponents) + j * nrComponents + k;
-	//			tensor_data[pixel_index] = (float)(data[pixel_index]) / max_pixel;
-	//			//cout << data[pixel_index] <<' ';
-	//		}
-	//		//cout << endl;
-	//	}
-	//stbi_image_free(data);
-	Tensor output_tensor = torch::from_blob(data, { height, width, nrComponents },c10::TensorOptions().dtype(c10::kFloat));
-	cout << output_tensor.sizes() << endl;//512,1024,3
-	cout << output_tensor[0][0] << endl;
-	cout << output_tensor[0][1] << endl;
-	cout << output_tensor[0][2] << endl;
-}
-
 int main(int argc, char* argv[])
 {
 	torch::manual_seed(1);
@@ -370,23 +327,25 @@ int main(int argc, char* argv[])
 		device = at::kCPU;
 	}
 
-	int run_mode = 1;
-	int refinecount = 0;
+	int run_mode = 2;
 	int epoch = 6000;
 	float lr = 0.01f;
 	Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::Default;
 	Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DTBC;
-	BC7::Mode7Type mode7Type = BC7::Mode7Type::MoP;
+	int encode_config_selection_Type = 1/*MoP*/;
+	string objectname = "Ukulele_01";
 	int pretain = 1;
-	string objectname = "";
 	int nm_vaild = 0;
 	string Fix_DTBC_best_epoch = "";
 	string DTBC_best_epoch = "";
+	string nm_codec_name = "BC7";
+	int Ns = 2;
+	int Nr = 2;
+	int featuresize = 512;
+	int log = 1;
 	int argindex = 1;
 	if (argc > argindex)
 		run_mode = std::atoi(argv[argindex++]);
-	if (argc > argindex)
-		refinecount = std::atoi(argv[argindex++]);
 	if (argc > argindex)
 		epoch = std::atoi(argv[argindex++]);
 	if (argc > argindex)
@@ -396,7 +355,7 @@ int main(int argc, char* argv[])
 	if (argc > argindex)
 		optimizeMode = (Compressor::OptimizeMode)std::atoi(argv[argindex++]);
 	if (argc > argindex)
-		mode7Type = (BC7::Mode7Type)std::atoi(argv[argindex++]);
+		encode_config_selection_Type = std::atoi(argv[argindex++]);
 	if (argc > argindex)
 		pretain = std::atoi(argv[argindex++]);
 	if (argc > argindex)
@@ -407,44 +366,112 @@ int main(int argc, char* argv[])
 		Fix_DTBC_best_epoch = argv[argindex++];
 	if (argc > argindex)
 		DTBC_best_epoch = argv[argindex++];
-	cout
-		<< "[args]" << endl
-		<< "run_mode: " << run_mode << endl
-		<< "refinecount : " << refinecount << endl
-		<< "epoch : " << epoch << endl
-		<< "lr : " << lr << endl
-		<< "quantizeMode : " << (uint32_t)quantizeMode << endl
-		<< "optimizeMode : " << (uint32_t)optimizeMode << endl
-		<< "mode7Type : " << (int)mode7Type << endl
-		<< "pretain : " << pretain << endl
-		<< "nm_vaild : " << nm_vaild << endl
-		<< "objectname : " << objectname << endl
-		<< "Fix_DTBC_best_epoch : " << Fix_DTBC_best_epoch << endl
-		<< "DTBC_best_epoch : " << DTBC_best_epoch << endl
-		;
-		
+	if (argc > argindex)
+		nm_codec_name = argv[argindex++];
+	if (argc > argindex)
+		Ns = std::atoi(argv[argindex++]);
+	if (argc > argindex)
+		Nr = std::atoi(argv[argindex++]);
+	if (argc > argindex)
+		featuresize = std::atoi(argv[argindex++]);
+	if (argc > argindex)
+		log = std::atoi(argv[argindex++]);
+	if (run_mode == 3)
+		nm_codec_name = "BC7";
+
+	if (log)
+	{
+		char tmp[1024];
+		snprintf(tmp, sizeof(tmp), "rmode=%d epoch=%d lr=%.3f qMode=%d optimMode=%d MoP=%d pretain=%d nm_vaild=%d object=%s nm_codec=%s Ns=%d Nr=%d fsize=%d",
+			run_mode, epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, pretain, nm_vaild, objectname.c_str(), nm_codec_name.c_str(), Ns, Nr, featuresize);
+		string filename(tmp);
+		filename = "log\\" + filename + ".txt";
+		//TxTClear(filename);
+		FILE* stream1;
+		freopen_s(&stream1, filename.c_str(), "w", stderr);
+	}
+
+	char targetString[1024];
+	snprintf(targetString, sizeof(targetString),
+		"[args]\n\
+run_mode: %d\n\
+epoch: %d\n\
+lr:  %f\n\
+quantizeMode: %d\n\
+optimizeMode: %d\n\
+encode_config_selection_Type: %d\n\
+pretain: %d\n\
+nm_vaild: %d\n\
+objectname: %s\n\
+Fix_DTBC_best_epoch: %s\n\
+DTBC_best_epoch: %s\n\
+nm_codec_name: %s\n\
+Ns: %d\n\
+Nr: %d\n\
+featuresize: %d\n\
+log: %d\n",
+		run_mode,
+		epoch,
+		lr,
+		quantizeMode,	
+		optimizeMode,
+		encode_config_selection_Type,
+		pretain,
+		nm_vaild,
+		objectname.c_str(),
+		Fix_DTBC_best_epoch.c_str(),
+		DTBC_best_epoch.c_str(),
+		nm_codec_name.c_str(),
+		Ns,
+		Nr,
+		featuresize,
+		log);
+	printlog(targetString);
+
+	bool bc7_use_mode4[8] = { 0,0,0,0,1,0,0,0 };
+	bool bc7_use_mode5[8] = { 0,0,0,0,0,1,0,0 };
+	bool bc7_use_mode6[8] = { 0,0,0,0,0,0,1,0 };
+	bool bc7_use_mode7[8] = { 0,0,0,0,0,0,0,1 };
+	bool bc7_use_mode45[8] = { 0,0,0,0,1,1,0,0 };
+	bool bc7_use_mode456[8] = { 0,0,0,0,1,1,1,0 };
+	bool bc7_use_mode4567[8] = { 0,0,0,0,1,1,1,1 };
+
 	if (run_mode == 0)
 	{
-		Test(refinecount, epoch, lr, quantizeMode, optimizeMode, mode7Type);
+		Test(epoch, lr, quantizeMode, optimizeMode, (BC7::Mode7Type)encode_config_selection_Type);
 	}
 	else if (run_mode == 1)
 	{
-		TestNeuralSolver(refinecount, epoch, lr, quantizeMode, optimizeMode, mode7Type);
+		TestNeuralSolver(epoch, lr, quantizeMode, optimizeMode, (BC7::Mode7Type)encode_config_selection_Type, Ns, Nr);
 	}
 	else if (run_mode == 2)
 	{
-		bool use_mode4[8] = { 0,0,0,0,1,0,0,0 };
-		bool use_mode5[8] = { 0,0,0,0,0,1,0,0 };
-		bool use_mode6[8] = { 0,0,0,0,0,0,1,0 };
-		bool use_mode7[8] = { 0,0,0,0,0,0,0,1 };
-		bool use_mode45[8] = { 0,0,0,0,1,1,0,0 };
-		bool use_mode456[8] = { 0,0,0,0,1,1,1,0 };
-		bool use_mode4567[8] = { 0,0,0,0,1,1,1,1 };
-		DTBC_config config(run_mode, refinecount, epoch, lr, quantizeMode, optimizeMode, mode7Type, use_mode4567);
-		NeuralMaterial nm(device, lr, config, pretain, objectname, nm_vaild, Fix_DTBC_best_epoch, DTBC_best_epoch);
+		bool bc6_use_mode1To10[2] = { 1,0 };
+		bool bc6_use_mode11To14[2] = { 0,1 };
+		bool bc6_use_mode1To14[2] = { 1,1 };
+		bool* use_mode = nullptr;
+		if (nm_codec_name == "BC6")
+			use_mode = bc6_use_mode1To14;
+		else //BC7
+			use_mode = bc7_use_mode4567;
+
+		DTBC_config config(device, run_mode, epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, use_mode, nm_codec_name, Ns, Nr);
+		NeuralMaterial nm(config, pretain, objectname, nm_vaild, Fix_DTBC_best_epoch, DTBC_best_epoch, featuresize);
 		nm.start();
+
+	}
+	else if (run_mode == 3)
+	{
+		bool* use_mode = bc7_use_mode4567;
+		DTBC_config config(device, run_mode, epoch, lr, quantizeMode,optimizeMode, encode_config_selection_Type, use_mode, nm_codec_name, Ns, Nr);
+		RGBMcodec rgbm(config, pretain, objectname, nm_vaild, Fix_DTBC_best_epoch, DTBC_best_epoch);
+		rgbm.start();
 	}
 	else
 		cout << "run_mode: " << run_mode << " is unsupported" << endl;
+
+	if(log)
+		fclose(stderr);
+
 	return 0;
 }

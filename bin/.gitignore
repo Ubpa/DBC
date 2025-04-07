@@ -4,4 +4,6 @@
 !pred/
 !pth/
 !image/
+!hdr_image/
+!log/
 !run_test.bat

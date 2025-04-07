@@ -2,15 +2,8 @@
 #include <torch/torch.h>
 #include <NeuralAidedMBD/Compressor.h>
 #include <NeuralAidedMBD/BC7.h>
+#include <NeuralAidedMBD/BC6.h>
 #include <NeuralAidedMBD/Utils.h>
-
-enum class EncodeMode : uint32_t
-{
-	None,
-	BC = 0b1,
-	DTBC = 0b10,
-	All = 0b11,
-};
 
 using std::cout;
 using std::endl;
@@ -72,22 +65,6 @@ struct NetImpl : torch::nn::Module {
 };
 TORCH_MODULE(Net);
 
-inline Tensor TensorToBlock(Tensor tensor/*[n, c, h, w]*/, int block_size)
-{
-	torch::nn::Unfold unfold(torch::nn::UnfoldOptions({ block_size, block_size }).stride(block_size));
-	tensor = unfold(tensor)//[n,c*b*b,L]
-				.reshape({ tensor.size(0),tensor.size(1),block_size * block_size,-1 })//[n,c,b*b,L]
-				.permute({ 0,3,2,1 })
-				.reshape({ -1,block_size * block_size,tensor.size(1) });//[N,b*b,c]
-	return tensor;//[N,b*b,c]
-}
-inline Tensor BlockToTensor(Tensor tensor/*[N, b*b, c]*/, int block_size, torch::IntArrayRef tensor_size/*[n, c, h, w]*/)
-{
-	torch::nn::Fold fold(torch::nn::FoldOptions({ tensor_size[2],tensor_size[3] }, { block_size, block_size }).stride(block_size));
-	tensor = tensor.permute({ 2,1,0 }).reshape({ -1, tensor.size(0) });//[c*b*b, N]
-	tensor = fold(tensor).unsqueeze(0);
-	return tensor;//[n, c, h, w]
-}
 struct FeatureImpl : torch::nn::Module {
 public:
 	FeatureImpl(at::DeviceType device, std::vector<torch::IntArrayRef> feature_size, Compressor* compressor = nullptr)
@@ -126,25 +103,20 @@ public:
 		}
 		return scaledfeatures;
 	}
-	Tensor DTBCcodec(Tensor blockfeature, double noisy)
-	{
-		_compressor->_src = blockfeature;//[N,b*b,c]
-		_compressor->encode(_roundc, 0.f, 1.f);//[N,b*b,c]
-		Tensor edC = _compressor->qdecode(_compressor->getcode(), _roundc, 0.f, noisy);//[N,b*b,c]
-		return edC;//[N,b*b,c]
-	}
-	torch::Tensor forward(torch::Tensor batch_grid/*[n,h,w,2]*/, EncodeMode encdoeMode, double noisy)
+	torch::Tensor forward(torch::Tensor batch_grid/*[n,h,w,2]*/, EncodeMode encodeMode, double noisy)
 	{
 		std::vector<torch::Tensor> tmp_features = _features; //[1,c,h,w]
-		if (encdoeMode != EncodeMode::None)
+		if (encodeMode != EncodeMode::None)
 		{
-			tmp_features = FeatureScale();
-			if ((uint32_t)encdoeMode & (uint32_t)EncodeMode::DTBC)
+			//if(typeid(*_compressor) == typeid(BC7))
+			//	tmp_features = FeatureScale();
+
+			if ((uint32_t)encodeMode & (uint32_t)EncodeMode::DTBC)
 			{
-				for(auto& feature : tmp_features)
+				for (auto& feature : tmp_features)
 					feature = TensorToBlock(feature, _BlockSize);//[N,b*b,c]
 				Tensor blockfeature = torch::cat(tmp_features, 0);
-				Tensor DTBC_blockfeature = DTBCcodec(blockfeature, noisy);//[N,b*b,c]:[-1,1]
+				Tensor DTBC_blockfeature = _compressor->DTBCcodec(blockfeature, noisy);//[N,b*b,c]:[-1,1]
 				int prefixsum_blockcount = 0;
 				for (int i = 0; i < tmp_features.size(); ++i)
 				{
@@ -154,27 +126,42 @@ public:
 				}
 			}
 
-			if ((uint32_t)encdoeMode & (uint32_t)EncodeMode::BC)
+			if ((uint32_t)encodeMode & (uint32_t)EncodeMode::BC)
 			{
-				for (auto& feature : tmp_features)
+				if (typeid(*_compressor) == typeid(BC6))
 				{
-					auto dtype = feature.dtype();
-					feature = feature.squeeze().permute({ 1,2,0 });//[h,w,c]:[-1,1]
-					feature = torch::round(torch::clamp((feature + 1) / 2.f, 0.f, 1.f) * 255.f).to(torch::kUInt8);//[h,w,c]:[0,255]
-					feature = Bc7e(feature).to(_device).permute({ 2,0,1 }).unsqueeze(0).to(dtype);//[1,c,h,w]:[0,255]
-					feature = (feature / 255.f) * 2.f - 1.f;//[1,c,h,w]:[-1,1]
+					for (auto& feature : tmp_features)
+					{
+						auto dtype = feature.dtype();
+						feature = feature.squeeze().unsqueeze(1);//[c,1,h,w]
+						feature = nvtt_bc6(feature).to(_device).to(dtype).squeeze().unsqueeze(0);//[1,c,h,w]
+					}
+				}
+				else //BC7
+				{
+					for (auto& feature : tmp_features)
+					{
+						auto dtype = feature.dtype();
+						feature = feature.squeeze().permute({ 1,2,0 });//[h,w,c]:[-1,1]
+						feature = torch::round(torch::clamp((feature + 1) / 2.f, 0.f, 1.f) * 255.f).to(torch::kUInt8);//[h,w,c]:[0,255]
+						//feature = Bc7e(feature).to(_device).permute({ 2,0,1 }).unsqueeze(0).to(dtype);//[1,c,h,w]:[0,255]
+						feature = nvtt_bc7(feature.permute({ 2,0,1 }).unsqueeze(1)).to(_device).permute({ 1,0,2,3 }).to(dtype);//[1,c,h,w]:[0,255]
+						feature = (feature / 255.f) * 2.f - 1.f;//[1,c,h,w]:[-1,1]
+					}
 				}
 			}
 
-			for (int i = 0; i < tmp_features.size(); ++i)
-			{
-				Tensor scale = _scales[i];
-				if ((uint32_t)encdoeMode & (uint32_t)EncodeMode::BC)
-					scale = scale.detach();
-				tmp_features[i] = tmp_features[i] * scale;
-			}
+			//if (typeid(*_compressor) == typeid(BC7))
+			//{
+			//	for (int i = 0; i < tmp_features.size(); ++i)
+			//	{
+			//		Tensor scale = _scales[i];
+			//		if ((uint32_t)encodeMode & (uint32_t)EncodeMode::BC)
+			//			scale = scale.detach();
+			//		tmp_features[i] = tmp_features[i] * scale;
+			//	}
+			//}
 		}
-
 		for (int i = 0; i < tmp_features.size(); ++i)
 		{
 			tmp_features[i] = torch::nn::functional::grid_sample(
@@ -192,7 +179,6 @@ public:
 	Compressor* _compressor;
 	int _BlockSize = 4;
 	int _BlockChannels = 4;
-	float _roundc = 0.f;
 };
 TORCH_MODULE(Feature);
 
@@ -204,14 +190,12 @@ public:
 		Rand,
 		MeshGrid,
 	};
-	NeuralMaterial(at::DeviceType device, float lr, DTBC_config config, int pretain, string objectname,int nm_vaild, string Fix_DTBC_best_epoch,string DTBC_best_epoch);
+	NeuralMaterial(DTBC_config config, int pretain, string objectname,int nm_vaild, string Fix_DTBC_best_epoch,string DTBC_best_epoch, int featuresize);
 	~NeuralMaterial() { delete _compressor; }
 	std::tuple<Tensor, Tensor> getBatch(int batch_size, int tile_size, int patch_size, BatchMode batchmode = BatchMode::Rand);
 	void start();
 	void train(Net& model, Feature& feature, torch::optim::Adam* optimizer, torch::nn::MSELoss& loss_fn, int epoch, int batch_size, int print_interval, int eval_interval, EncodeMode encodeMode);
 	void valid(Net& model, Feature& feature, torch::nn::MSELoss& loss_fn, int batch_size, EncodeMode encodeMode);
-	at::DeviceType _device;
-	float _lr;
 	Tensor _train_tex;//[1,c,h,w]
 	DTBC_config _config;
 	Compressor* _compressor;
@@ -222,6 +206,7 @@ public:
 	int _vaild;
 	string _Fix_DTBC_best_epoch;
 	string _DTBC_best_epoch;
+	int _FeatureSize;
 };
 
 class ExponentialLR : public torch::optim::LRScheduler {

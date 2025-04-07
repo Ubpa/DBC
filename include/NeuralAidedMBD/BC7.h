@@ -11,7 +11,7 @@ public:
 		MoP, // Mixture of Partitions
 	};
 
-	BC7(at::DeviceType device, int refinecount = 2, int epoch = 10, float lr = 0.1, bool* use_mode = nullptr, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optimizeMode = OptimizeMode::DTBC, Mode7Type mode7Type = Mode7Type::MoP);
+	BC7(at::DeviceType device, int epoch = 10, float lr = 0.1, bool* use_mode = nullptr, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optimizeMode = OptimizeMode::DTBC, Mode7Type mode7Type = Mode7Type::MoP, int Ns = 2, int Nr = 2);
 
 	virtual ~BC7()
 	{
@@ -29,16 +29,16 @@ public:
 	//7: mode6, mask, [n,b*b]
 	std::vector<torch::Tensor> _code456;
 
-	// partitions, c0+c1+mask, 2 subset
-	torch::Tensor _code7[64][3][2];
+	// c0+c1+mask, 2 subset
+	torch::Tensor _code7[3][2];
 	torch::Tensor _rotation = torch::tensor({ { 0,1,2,3 }, { 3,1,2,0 }, { 0,3,2,1 }, { 0,1,3,2 } });
 	torch::Tensor _rotationRGB = torch::tensor({ { 0,1,2 }, { 3,1,2 }, { 0,3,2 }, { 0,1,3 } });
 	torch::Tensor _index_selector = torch::tensor({ {7,3},{3,7} });
 	bool _use_mode[8];
 	Mode7Type _mode7Type;
-	int _Ns = 1, _Nr = 0;
+	int _Ns = 2, _Nr = 2;
 	torch::Tensor _MoPIndices;
-	// reshape to [p,b*b]
+	// [p,b*b]
 	torch::Tensor _bc7_partition2 = torch::tensor(
 		{
 			0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1,		0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,		0,1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,		0,0,0,1,0,0,1,1,0,0,1,1,0,1,1,1,		0,0,0,0,0,0,0,1,0,0,0,1,0,0,1,1,		0,0,1,1,0,1,1,1,0,1,1,1,1,1,1,1,		0,0,0,1,0,0,1,1,0,1,1,1,1,1,1,1,		0,0,0,0,0,0,0,1,0,0,1,1,0,1,1,1,
@@ -49,14 +49,11 @@ public:
 			0,1,1,1,0,0,1,1,1,1,0,0,1,1,1,0,		0,0,0,1,0,0,1,1,1,1,0,0,1,0,0,0,		0,0,1,1,0,0,1,0,0,1,0,0,1,1,0,0,		0,0,1,1,1,0,1,1,1,1,0,1,1,1,0,0,		0,1,1,0,1,0,0,1,1,0,0,1,0,1,1,0,		0,0,1,1,1,1,0,0,1,1,0,0,0,0,1,1,		0,1,1,0,0,1,1,0,1,0,0,1,1,0,0,1,		0,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0,
 			0,1,0,0,1,1,1,0,0,1,0,0,0,0,0,0,		0,0,1,0,0,1,1,1,0,0,1,0,0,0,0,0,		0,0,0,0,0,0,1,0,0,1,1,1,0,0,1,0,		0,0,0,0,0,1,0,0,1,1,1,0,0,1,0,0,		0,1,1,0,1,1,0,0,1,0,0,1,0,0,1,1,		0,0,1,1,0,1,1,0,1,1,0,0,1,0,0,1,		0,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,		0,0,1,1,1,0,0,1,1,1,0,0,0,1,1,0,
 			0,1,1,0,1,1,0,0,1,1,0,0,1,0,0,1,		0,1,1,0,0,0,1,1,0,0,1,1,1,0,0,1,		0,1,1,1,1,1,1,0,1,0,0,0,0,0,0,1,		0,0,0,1,1,0,0,0,1,1,1,0,0,1,1,1,		0,0,0,0,1,1,1,1,0,0,1,1,0,0,1,1,		0,0,1,1,0,0,1,1,1,1,1,1,0,0,0,0,		0,0,1,0,0,0,1,0,1,1,1,0,1,1,1,0,		0,1,0,0,0,1,0,0,0,1,1,1,0,1,1,1
-		}, torch::TensorOptions().requires_grad(false));
+		}, torch::TensorOptions().requires_grad(false)).reshape({ 64,16 });
 	torch::Tensor _origin_bc7_partition2_subset[64 * 2];
 	torch::Tensor _origin_bc7_partition2_subset_repermute = torch::zeros({ 64,16 },torch::TensorOptions().dtype(torch::kInt64));
 
-	virtual torch::Tensor forward(const torch::Tensor& src);
-	virtual torch::Tensor backward(const torch::Tensor& gradinput);
-	virtual void encode(float roundc, double tau = 1.0, double noisy = 1.0) override;
+	virtual void encode() override;
 	virtual std::vector<torch::Tensor> getcode() override;
-	virtual torch::Tensor decode(const std::vector<torch::Tensor>& code) override;
-	virtual torch::Tensor qdecode(const std::vector<torch::Tensor>& code, float roundc, double tau = 1.0, double noisy = 1.0) override;
+	virtual torch::Tensor decode(const std::vector<torch::Tensor>& code, double noisy = 1.0) override;
 };
