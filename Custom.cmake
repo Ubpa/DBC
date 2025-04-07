@@ -1,4 +1,31 @@
-message(STATUS "include CustomBuild.cmake")
+function(Custom_List_Print)
+  cmake_parse_arguments("ARG" "" "TITLE;PREFIX" "STRS" ${ARGN})
+  list(LENGTH ARG_STRS strsLength)
+  if(NOT strsLength)
+    return()
+  endif()
+  if(NOT ${ARG_TITLE} STREQUAL "")
+    message(STATUS ${ARG_TITLE})
+  endif()
+  foreach(str ${ARG_STRS})
+    message(STATUS "${ARG_PREFIX}${str}")
+  endforeach()
+endfunction()
+
+function(Custom_GetDirName dirName)
+  string(REGEX MATCH "([^/]*)$" TMP ${CMAKE_CURRENT_SOURCE_DIR})
+  set(${dirName} ${TMP} PARENT_SCOPE)
+endfunction()
+
+function(Custom_Path_Back rst path times)
+  math(EXPR stop "${times}-1")
+  set(curPath ${path})
+  foreach(index RANGE ${stop})
+    string(REGEX MATCH "(.*)/" _ ${curPath})
+    set(curPath ${CMAKE_MATCH_1})
+  endforeach()
+  set(${rst} ${curPath} PARENT_SCOPE)
+endfunction()
 
 function(Custom_AddSubDirsRec path)
   file(GLOB_RECURSE children LIST_DIRECTORIES true ${CMAKE_CURRENT_SOURCE_DIR}/${path}/*)
@@ -43,23 +70,6 @@ function(_Custom_ExpandSources rst _sources)
         ${item}/*.cc
         ${item}/*.cpp
         ${item}/*.cxx
-        
-        # shader files
-        ${item}/*.vert # glsl vertex shader
-        ${item}/*.tesc # glsl tessellation control shader
-        ${item}/*.tese # glsl tessellation evaluation shader
-        ${item}/*.geom # glsl geometry shader
-        ${item}/*.frag # glsl fragment shader
-        ${item}/*.comp # glsl compute shader
-        
-        #${item}/*.hlsl
-        #${item}/*.hlsli
-        #${item}/*.fx
-        #${item}/*.fxh
-        
-        # Qt files
-        ${item}/*.qrc
-        ${item}/*.ui
       )
       list(APPEND tmp_rst ${itemSrcs})
     else()
@@ -84,7 +94,7 @@ function(Custom_AddTarget)
   list(APPEND arglist SOURCE INC_PRIVATE LIB_PRIVATE DEFINE_PRIVATE C_OPTION_PRIVATE L_OPTION_PRIVATE PCH)
   cmake_parse_arguments(
     "ARG"
-    "TEST;QT;NOT_GROUP"
+    "TEST;NOT_GROUP"
     "MODE;ADD_CURRENT_TO;OUTPUT_NAME;RET_TARGET_NAME;CXX_STANDARD;PCH_REUSE_FROM"
     "${arglist}"
     ${ARGN}
@@ -126,7 +136,6 @@ function(Custom_AddTarget)
   
   # [option]
   # TEST
-  # QT
   # NOT_GROUP
   # [value]
   # MODE: EXE / STATIC / SHARED / INTERFACE / STATIC_AND_SHARED
@@ -142,15 +151,6 @@ function(Custom_AddTarget)
   # C_OPTION: compile options                          | target_compile_options
   # L_OPTION: link options                             | target_link_options
   # PCH: precompile headers                            | target_precompile_headers
-  
-  # test
-  if(ARG_TEST AND NOT "${Custom_BuildTest_${PROJECT_NAME}}")
-    return()
-  endif()
-  
-  if(ARG_QT)
-    Custom_QtBegin()
-  endif()
   
   # sources
   if("${ARG_ADD_CURRENT_TO}" STREQUAL "PUBLIC")
@@ -263,8 +263,6 @@ function(Custom_AddTarget)
   Custom_List_Print(STRS ${ARG_L_OPTION_PRIVATE}
     TITLE  "- link option private:"
     PREFIX "  * ")
-  
-  Custom_PackageName(package_name)
   
   set(targetNames "")
 
@@ -469,9 +467,83 @@ function(Custom_AddTarget)
     endif()
   endforeach()
   
-  if(ARG_QT)
-    Custom_QtEnd()
-  endif()
-  
   message(STATUS "----------")
 endfunction()
+
+macro(Custom_InitProject)
+  set(CMAKE_DEBUG_POSTFIX "d")
+  set(CMAKE_RELEASE_POSTFIX "")
+  set(CMAKE_MINSIZEREL_POSTFIX "msr")
+  set(CMAKE_RELWITHDEBINFO_POSTFIX "rd")
+  
+  set(CMAKE_CXX_STANDARD 20)
+  set(CMAKE_CXX_STANDARD_REQUIRED True)
+
+  if(NOT CMAKE_BUILD_TYPE)
+    message(NOTICE "No default CMAKE_BUILD_TYPE, so UCMake set it to \"Release\"")
+    set(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+  endif()
+
+  add_compile_definitions(UCMAKE_CONFIG_$<UPPER_CASE:$<CONFIG>>)
+  add_compile_definitions(
+    $<$<CONFIG:Debug>:UCMAKE_CONFIG_POSTFIX="${CMAKE_DEBUG_POSTFIX}">
+    $<$<CONFIG:Release>:UCMAKE_CONFIG_POSTFIX="">
+    $<$<CONFIG:MinSizeRel>:UCMAKE_CONFIG_POSTFIX="${CMAKE_MINSIZEREL_POSTFIX}">
+    $<$<CONFIG:RelWithDebInfo>:UCMAKE_CONFIG_POSTFIX="${CMAKE_RELWITHDEBINFO_POSTFIX}">
+    $<$<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:Release>,$<CONFIG:MinSizeRel>,$<CONFIG:RelWithDebInfo>>>:UCMAKE_CONFIG_POSTFIX="">
+  )
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  # using Clang
+    message(STATUS "Compiler: Clang ${CMAKE_CXX_COMPILER_VERSION}")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10")
+      message(FATAL_ERROR "clang (< 10) not support concept")
+      return()
+    endif()
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    message(STATUS "Compiler: GCC ${CMAKE_CXX_COMPILER_VERSION}")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10")
+      message(FATAL_ERROR "gcc (< 10) not support concept")
+      return()
+    endif()
+  # using GCC
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  # using Visual Studio C++
+    message(STATUS "Compiler: MSVC ${CMAKE_CXX_COMPILER_VERSION}")
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.26")
+      message(FATAL_ERROR "MSVC (< 1926 / 2019 16.6) not support concept")
+      return()
+    endif()
+  else()
+    message(WARNING "Unknown CMAKE_CXX_COMPILER_ID : ${CMAKE_CXX_COMPILER_ID}")
+  endif()
+  
+  message(STATUS "CXX_STANDARD: ${CMAKE_CXX_STANDARD}")
+  
+  if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    Custom_Path_Back(root ${CMAKE_INSTALL_PREFIX} 1)
+    set(CMAKE_INSTALL_PREFIX "${root}/Custom" CACHE PATH "install prefix" FORCE)
+  endif()
+  
+  if(NOT Custom_RootProjectPath)
+    set(Custom_RootProjectPath ${PROJECT_SOURCE_DIR})
+  endif()
+  
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${Custom_RootProjectPath}/bin")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${Custom_RootProjectPath}/lib")
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${Custom_RootProjectPath}/bin")
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_MINSIZEREL ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+  
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+endmacro()

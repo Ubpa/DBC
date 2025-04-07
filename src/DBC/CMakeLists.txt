@@ -1,11 +1,4 @@
-set(mode "")
 set(private_defines "")
-if(Custom_UMBD_UsingSharedLibrary)
-  set(mode SHARED)
-  list(APPEND private_defines "Custom_UMBD_BUILDING_SHARED_LIBRARY")
-else()
-  set(mode STATIC)
-endif()
 
 set(c_options_private "")
 if(MSVC)
@@ -17,7 +10,7 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 endif()
 
 Custom_AddTarget(
-  MODE ${mode}
+  MODE STATIC
   CXX_STANDARD 17
   PRIVATE_DEFINE
     ${private_defines}
