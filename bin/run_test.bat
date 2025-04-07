@@ -14,46 +14,46 @@ set encode_config_selection_Type="1"
 set pretain="0"
 set nm_vaild="0"
 set objectname="lubricant_spray"
-set Fix_DTBC_best_epoch="600"
-set DTBC_best_epoch="1600"
+set Fix_DBC_best_epoch="600"
+set DBC_best_epoch="1600"
 set nm_codec_name="BC7"
 set Ns="2"
 set Nr="2"
 set featuresize="512"
 set log="1"
 
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "2" "2" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "0" "4" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "0" "8" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "2" "2" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "0" "4" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "0" "8" %featuresize% %log%
 
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "0" "4" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "4" "0" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "0" "2" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "1" "1" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "2" "0" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "2" "2" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "0" "8" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "4" "4" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "8" "0" %featuresize% %log%
-@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DTBC_best_epoch% %DTBC_best_epoch% %nm_codec_name% "64" "0" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "0" "4" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "4" "0" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "0" "2" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "1" "1" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "2" "0" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "2" "2" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "0" "8" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "4" "4" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "8" "0" %featuresize% %log%
+@REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" %pretain% %nm_vaild% %objectname% %Fix_DBC_best_epoch% %DBC_best_epoch% %nm_codec_name% "64" "0" %featuresize% %log%
 
 @REM train
 @REM (for %%p in (%params1%) do (
-@REM     call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "0" "1" "1" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC6" "2" "2" "512" %log%
-@REM     call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC6" "2" "2" "512" %log%
+@REM     call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "0" "1" "1" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC6" "2" "2" "512" %log%
+@REM     call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC6" "2" "2" "512" %log%
 @REM ))
 @REM (for %%p in (%params%) do (
-@REM     call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "1" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC7" "2" "2" "512" %log%
+@REM     call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "1" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC7" "2" "2" "512" %log%
 @REM ))
 (for %%p in (%params%) do (
-    @REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "0" "1" "1" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC6" "2" "2" "1024" %log%
-    @REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC6" "2" "2" "1024" %log%
-    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "1" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC7" "2" "2" "1024" %log%
+    @REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "0" "1" "1" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC6" "2" "2" "1024" %log%
+    @REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC6" "2" "2" "1024" %log%
+    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "1" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC7" "2" "2" "1024" %log%
 ))
 (for %%p in (%params%) do (
-    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "0" "1" "1" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC6" "2" "2" "2048" %log%
-    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC6" "2" "2" "2048" %log%
-    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "1" %nm_vaild% %%p %Fix_DTBC_best_epoch% %DTBC_best_epoch% "BC7" "2" "2" "2048" %log%
+    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "0" "1" "1" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC6" "2" "2" "2048" %log%
+    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "0" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC6" "2" "2" "2048" %log%
+    call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %epoch% %lr% %quantizeMode% "1" "1" "1" %nm_vaild% %%p %Fix_DBC_best_epoch% %DBC_best_epoch% "BC7" "2" "2" "2048" %log%
 ))
 @REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %refinecount% %epoch% %lr% %leaky% %optimizeMode% %encode_config_selection_Type% "0" "1" "Ukulele_01" "1000" "900" %nm_codec_name% "0"
 @REM call CMakeLibTorch_examples_4_NeuralSolver.exe  %run_mode% %refinecount% %epoch% %lr% %leaky% %optimizeMode% %encode_config_selection_Type% "0" "1" "antique_katana_01" "600" "800" %nm_codec_name% "0"

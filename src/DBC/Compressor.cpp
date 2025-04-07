@@ -106,7 +106,7 @@ Tensor Compressor::subset_decode(const torch::Tensor& src/*[m,n,b*b,c] or [n,b*b
 	}
 }
 
-bool Compressor::DTBCLRScheduler(double cost,double& histcost,int& lr_interval,int lr_patience)
+bool Compressor::DBCLRScheduler(double cost,double& histcost,int& lr_interval,int lr_patience)
 {
 	/**
 		* 1. cost < histcost => good
@@ -131,7 +131,7 @@ bool Compressor::DTBCLRScheduler(double cost,double& histcost,int& lr_interval,i
 	}
 }
 
-Tensor Compressor::DTBCcodec(const Tensor blockfeature, double noisy)
+Tensor Compressor::DBCcodec(const Tensor blockfeature, double noisy)
 {
 	_src = blockfeature;//[N,b*b,c]
 	encode();//[N,b*b,c]

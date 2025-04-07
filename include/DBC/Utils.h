@@ -26,9 +26,9 @@ inline Tensor BlockToTensor(Tensor tensor/*[N, b*b, c]*/, int block_size, torch:
 	return tensor;//[n, c, h, w]
 }
 
-struct DTBC_config
+struct DBC_config
 {
-	DTBC_config(at::DeviceType device = at::kCPU, int epoch = 6000, float lr = 0.1f, Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::None, Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DTBC, int encode_config_selection_Type = 1/*MoP*/, bool* use_mode = nullptr, std::string codec_name = "BC6", int Ns = 2, int Nr = 2)
+	DBC_config(at::DeviceType device = at::kCPU, int epoch = 6000, float lr = 0.1f, Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::None, Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DBC, int encode_config_selection_Type = 1/*MoP*/, bool* use_mode = nullptr, std::string codec_name = "BC6", int Ns = 2, int Nr = 2)
 	{
 		_epoch = epoch;
 		_lr = lr;

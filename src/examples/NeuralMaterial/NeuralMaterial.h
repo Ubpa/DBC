@@ -76,17 +76,17 @@ public:
 		std::vector<torch::Tensor> tmp_features = _features; //[1,c,h,w]
 		if (encodeMode != EncodeMode::None)
 		{
-			if ((uint32_t)encodeMode & (uint32_t)EncodeMode::DTBC)
+			if ((uint32_t)encodeMode & (uint32_t)EncodeMode::DBC)
 			{
 				for (auto& feature : tmp_features)
 					feature = TensorToBlock(feature, _BlockSize);//[N,b*b,c]
 				Tensor blockfeature = torch::cat(tmp_features, 0);
-				Tensor DTBC_blockfeature = _compressor->DTBCcodec(blockfeature, noisy);//[N,b*b,c]:[-1,1]
+				Tensor DBC_blockfeature = _compressor->DBCcodec(blockfeature, noisy);//[N,b*b,c]:[-1,1]
 				int prefixsum_blockcount = 0;
 				for (int i = 0; i < tmp_features.size(); ++i)
 				{
 					int blockcount = (int)tmp_features[i].size(0);
-					tmp_features[i] = BlockToTensor(DTBC_blockfeature.index({ Slice(prefixsum_blockcount,prefixsum_blockcount + blockcount) }), _BlockSize, _features[i].sizes());//[n, c, h, w]
+					tmp_features[i] = BlockToTensor(DBC_blockfeature.index({ Slice(prefixsum_blockcount,prefixsum_blockcount + blockcount) }), _BlockSize, _features[i].sizes());//[n, c, h, w]
 					prefixsum_blockcount += blockcount;
 				}
 			}
@@ -143,21 +143,21 @@ public:
 		Rand,
 		MeshGrid,
 	};
-	NeuralMaterial(DTBC_config config, int pretain, string objectname,int nm_vaild, string Fix_DTBC_best_epoch,string DTBC_best_epoch, int featuresize);
+	NeuralMaterial(DBC_config config, int pretain, string objectname,int nm_vaild, string Fix_DBC_best_epoch,string DBC_best_epoch, int featuresize);
 	~NeuralMaterial() { delete _compressor; }
 	std::tuple<Tensor, Tensor> getBatch(int batch_size, int tile_size, int patch_size, BatchMode batchmode = BatchMode::Rand);
 	void start();
 	void train(Net& model, Feature& feature, torch::optim::Adam* optimizer, torch::nn::MSELoss& loss_fn, int epoch, int batch_size, int print_interval, int eval_interval, EncodeMode encodeMode);
 	void valid(Net& model, Feature& feature, torch::nn::MSELoss& loss_fn, int batch_size, EncodeMode encodeMode);
 	Tensor _train_tex;//[1,c,h,w]
-	DTBC_config _config;
+	DBC_config _config;
 	Compressor* _compressor;
 	std::vector<string> _data_name;
 	std::vector<int> _data_channel;
 	int _pretain;
 	string _objectname;
 	int _vaild;
-	string _Fix_DTBC_best_epoch;
-	string _DTBC_best_epoch;
+	string _Fix_DBC_best_epoch;
+	string _DBC_best_epoch;
 	int _FeatureSize;
 };

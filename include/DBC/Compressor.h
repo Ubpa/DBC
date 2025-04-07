@@ -7,7 +7,7 @@ enum class EncodeMode : uint32_t
 {
 	None,
 	BC = 0b1,
-	DTBC = 0b10,
+	DBC = 0b10,
 	All = 0b11,
 };
 
@@ -32,9 +32,9 @@ public:
 	enum class OptimizeMode : uint32_t
 	{
 		FixConfig,
-		DTBC,
+		DBC,
 	};
-	Compressor(at::DeviceType device, int epoch = 10, float lr = 0.1, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optmizeMode = OptimizeMode::DTBC);
+	Compressor(at::DeviceType device, int epoch = 10, float lr = 0.1, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optmizeMode = OptimizeMode::DBC);
 	virtual ~Compressor() {}
 
 	bool _QuantizeColor, _QuantizeMask;
@@ -55,7 +55,7 @@ public:
 
 	torch::Tensor forward(const torch::Tensor &src, double noisy = 1.0);
 	torch::Tensor backward(const torch::Tensor &gradinput);
-	bool DTBCLRScheduler(double cost,double& histcost,int& lr_interval,int lr_patience);
+	bool DBCLRScheduler(double cost,double& histcost,int& lr_interval,int lr_patience);
 
 
 	virtual void encode() = 0;
@@ -67,5 +67,5 @@ public:
 	// src => mask * v + mu
 	void subset_encode(const torch::Tensor& src /*[x,b*b,c]*/, torch::Tensor& v /*[x,c]*/, torch::Tensor& mu /*[x,c]*/, torch::Tensor& mask /*[x,b*b]*/, const torch::Tensor* weight /*[x,b*b]*/ = nullptr);
 	torch::Tensor subset_decode(const torch::Tensor& src, const torch::Tensor& c0, const torch::Tensor& c1, const torch::Tensor& mask, int QuantizeMaskMaxValue = 0, int QuantizeColorMaxValue = 0);
-	torch::Tensor DTBCcodec(const torch::Tensor blockfeature, double noisy);
+	torch::Tensor DBCcodec(const torch::Tensor blockfeature, double noisy);
 };

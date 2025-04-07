@@ -16,10 +16,10 @@ using std::tuple;
 using std::get;
 using torch::Tensor;
 
-NeuralMaterial::NeuralMaterial(DTBC_config config, int pretain,string objectname,int nm_vaild,string Fix_DTBC_best_epoch,string DTBC_best_epoch,int featuresize)
+NeuralMaterial::NeuralMaterial(DBC_config config, int pretain,string objectname,int nm_vaild,string Fix_DBC_best_epoch,string DBC_best_epoch,int featuresize)
 {
-	_Fix_DTBC_best_epoch = Fix_DTBC_best_epoch;
-	_DTBC_best_epoch = DTBC_best_epoch;
+	_Fix_DBC_best_epoch = Fix_DBC_best_epoch;
+	_DBC_best_epoch = DBC_best_epoch;
 	_vaild = nm_vaild;
 	_objectname = objectname;
 	_pretain = pretain;
@@ -173,7 +173,7 @@ void NeuralMaterial::start()
 		optimizer->add_param_group(torch::optim::OptimizerParamGroup(feature->_features));
 		optimizer->param_groups()[0].options().set_lr(_config._lr);
 		optimizer->param_groups()[1].options().set_lr(_config._lr);
-		train(model, feature, optimizer, loss_fn, epoch2, batch_size, 1, 50, EncodeMode::DTBC);
+		train(model, feature, optimizer, loss_fn, epoch2, batch_size, 1, 50, EncodeMode::DBC);
 	}
 	else
 	{
@@ -185,24 +185,24 @@ void NeuralMaterial::start()
 		feature->_compressor->_init_MoP_weight = true;
 		auto batch = getBatch(batch_size, (int)_train_tex.size(2), 0, BatchMode::MeshGrid);
 		Tensor batch_tex = get<0>(batch), batch_grid = get<1>(batch);
-		Tensor batch_feature = feature->forward(batch_grid, EncodeMode::DTBC, 0.);
-		torch::load(model, "pth\\" + _config._codec_name + "_" + _objectname + "_Fix_DTBC_" + _Fix_DTBC_best_epoch + "_model.pth");
-		torch::load(feature, "pth\\" + _config._codec_name + "_" + _objectname + "_Fix_DTBC_" + _Fix_DTBC_best_epoch + "_feature.pth");
+		Tensor batch_feature = feature->forward(batch_grid, EncodeMode::DBC, 0.);
+		torch::load(model, "pth\\" + _config._codec_name + "_" + _objectname + "_Fix_DBC_" + _Fix_DBC_best_epoch + "_model.pth");
+		torch::load(feature, "pth\\" + _config._codec_name + "_" + _objectname + "_Fix_DBC_" + _Fix_DBC_best_epoch + "_feature.pth");
 		feature->_compressor->_init_MoP_weight = false;
-		valid(model, feature, loss_fn, batch_size, EncodeMode::DTBC);
+		valid(model, feature, loss_fn, batch_size, EncodeMode::DBC);
 
-		torch::load(model, "pth\\" + _config._codec_name + "_" + _objectname + "_DTBC_" + _DTBC_best_epoch + "_model.pth");
-		torch::load(feature, "pth\\" + _config._codec_name + "_" + _objectname + "_DTBC_" + _DTBC_best_epoch + "_feature.pth");
-		feature->_compressor->_optimizeMode = Compressor::OptimizeMode::DTBC;
+		torch::load(model, "pth\\" + _config._codec_name + "_" + _objectname + "_DBC_" + _DBC_best_epoch + "_model.pth");
+		torch::load(feature, "pth\\" + _config._codec_name + "_" + _objectname + "_DBC_" + _DBC_best_epoch + "_feature.pth");
+		feature->_compressor->_optimizeMode = Compressor::OptimizeMode::DBC;
 		feature->_compressor->_init_MoP_weight = true;
-		valid(model, feature, loss_fn, batch_size, EncodeMode::DTBC);
+		valid(model, feature, loss_fn, batch_size, EncodeMode::DBC);
 	}
 }
 
 void NeuralMaterial::valid(Net& model, Feature& feature, torch::nn::MSELoss& loss_fn, int batch_size, EncodeMode encodeMode)
 {
-	string prefix = encodeMode == EncodeMode::DTBC ? "DTBC_" : (encodeMode == EncodeMode::BC ? "BC_" : "");
-	if (encodeMode == EncodeMode::DTBC && feature->_compressor->_optimizeMode == Compressor::OptimizeMode::FixConfig)
+	string prefix = encodeMode == EncodeMode::DBC ? "DBC_" : (encodeMode == EncodeMode::BC ? "BC_" : "");
+	if (encodeMode == EncodeMode::DBC && feature->_compressor->_optimizeMode == Compressor::OptimizeMode::FixConfig)
 		prefix = "Fix_" + prefix;
 	char targetString[256];
 	feature->_compressor->_updateMoPweight = false;
@@ -234,16 +234,16 @@ void NeuralMaterial::valid(Net& model, Feature& feature, torch::nn::MSELoss& los
 void NeuralMaterial::train(Net& model, Feature& feature, torch::optim::Adam* optimizer, torch::nn::MSELoss& loss_fn, int epoch, int batch_size, int print_interval, int eval_interval, EncodeMode encodeMode)
 {
 	try {
-	string prefix = encodeMode == EncodeMode::DTBC ? "DTBC_" : (encodeMode == EncodeMode::BC ? "BC_" : "");
-	if (encodeMode == EncodeMode::DTBC && feature->_compressor->_optimizeMode == Compressor::OptimizeMode::FixConfig)
+	string prefix = encodeMode == EncodeMode::DBC ? "DBC_" : (encodeMode == EncodeMode::BC ? "BC_" : "");
+	if (encodeMode == EncodeMode::DBC && feature->_compressor->_optimizeMode == Compressor::OptimizeMode::FixConfig)
 		prefix = "Fix_" + prefix;
 	char targetString[1024];
 	feature->_compressor->_init_MoP_weight = true;
 	double noisy = 100.f;
 	double histloss = 1e20;
-	int lr_patience = encodeMode == EncodeMode::DTBC ? 40 : 200;
+	int lr_patience = encodeMode == EncodeMode::DBC ? 40 : 200;
 	int lr_interval = 0;
-	int cooldown = encodeMode == EncodeMode::DTBC ? 0 : 100;
+	int cooldown = encodeMode == EncodeMode::DBC ? 0 : 100;
 	int error_patience = 5;
 	int error_count = 0;
 	float error_minmum = 1e15f;
@@ -295,11 +295,11 @@ void NeuralMaterial::train(Net& model, Feature& feature, torch::optim::Adam* opt
 		}
 		auto time = std::chrono::system_clock::now() - tmp_start;
 		float qloss_item = loss_item;
-		if (encodeMode == EncodeMode::DTBC)
+		if (encodeMode == EncodeMode::DBC)
 		{
 			double lr_model = optimizer->param_groups()[0].options().get_lr();
 			double lr_feature = optimizer->param_groups()[1].options().get_lr();
-			bool LRstep = feature->_compressor->DTBCLRScheduler(qloss_item, histloss, lr_interval, lr_patience);
+			bool LRstep = feature->_compressor->DBCLRScheduler(qloss_item, histloss, lr_interval, lr_patience);
 			if (LRstep)
 			{
 				optimizer->param_groups()[0].options().set_lr(lr_model * 0.9);

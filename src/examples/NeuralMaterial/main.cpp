@@ -4,15 +4,10 @@
 #include <string>
 #include <cmath>
 #include <tuple>
-//#include <stdio.h>
-//#include <cassert>
-//#include <typeinfo>
-//#include "tqdm.h"
 #include <DBC/BC7.h>
 #include <DBC/Utils.h>
 #include "NeuralMaterial.h"
 
-//#include <cublas_v2.h>
 using std::cout;
 using std::endl;
 using std::min;
@@ -43,13 +38,13 @@ int main(int argc, char* argv[])
 	int epoch = 6000;
 	float lr = 0.01f;
 	Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::Default;
-	Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DTBC;
+	Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DBC;
 	int encode_config_selection_Type = 1/*MoP*/;
 	string objectname = "lubricant_spray";
 	int pretain = 1;
 	int nm_vaild = 0;
-	string Fix_DTBC_best_epoch = "";
-	string DTBC_best_epoch = "";
+	string Fix_DBC_best_epoch = "";
+	string DBC_best_epoch = "";
 	string nm_codec_name = "BC7";
 	int Ns = 2;
 	int Nr = 2;
@@ -73,9 +68,9 @@ int main(int argc, char* argv[])
 	if (argc > argindex)
 		objectname = argv[argindex++];
 	if (argc > argindex)
-		Fix_DTBC_best_epoch = argv[argindex++];
+		Fix_DBC_best_epoch = argv[argindex++];
 	if (argc > argindex)
-		DTBC_best_epoch = argv[argindex++];
+		DBC_best_epoch = argv[argindex++];
 	if (argc > argindex)
 		nm_codec_name = argv[argindex++];
 	if (argc > argindex)
@@ -110,8 +105,8 @@ encode_config_selection_Type: %d\n\
 pretain: %d\n\
 nm_vaild: %d\n\
 objectname: %s\n\
-Fix_DTBC_best_epoch: %s\n\
-DTBC_best_epoch: %s\n\
+Fix_DBC_best_epoch: %s\n\
+DBC_best_epoch: %s\n\
 nm_codec_name: %s\n\
 Ns: %d\n\
 Nr: %d\n\
@@ -125,8 +120,8 @@ log: %d\n",
 		pretain,
 		nm_vaild,
 		objectname.c_str(),
-		Fix_DTBC_best_epoch.c_str(),
-		DTBC_best_epoch.c_str(),
+		Fix_DBC_best_epoch.c_str(),
+		DBC_best_epoch.c_str(),
 		nm_codec_name.c_str(),
 		Ns,
 		Nr,
@@ -151,8 +146,8 @@ log: %d\n",
 	else //BC7
 		use_mode = bc7_use_mode4567;
 
-	DTBC_config config(device, epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, use_mode, nm_codec_name, Ns, Nr);
-	NeuralMaterial nm(config, pretain, objectname, nm_vaild, Fix_DTBC_best_epoch, DTBC_best_epoch, featuresize);
+	DBC_config config(device, epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, use_mode, nm_codec_name, Ns, Nr);
+	NeuralMaterial nm(config, pretain, objectname, nm_vaild, Fix_DBC_best_epoch, DBC_best_epoch, featuresize);
 	nm.start();
 
 	if(log)
