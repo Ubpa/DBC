@@ -56,9 +56,7 @@ void BC7::encode()
 			_src.select(-1, 2)}).unsqueeze(-1); //[rot,n,b*b,1]
 		Tensor c0, c1, mask;
 		subset_encode(srcRGB, c0, c1, mask);
-		Tensor Alphamax16, Alphamin16; //[rot,n,1]
-		Tensor Alphamask; //[rot,n,b*b]
-		OptimizeAlphaBlock(srcA, Alphamax16, Alphamin16, Alphamask);
+		Tensor Alphamask = srcA.squeeze(-1); //[rot,n,b*b]
 		_code456[0] = c0;
 		_code456[1] = c1;
 		_code456[2] = mask;
@@ -130,15 +128,6 @@ Tensor BC7::decode(const std::vector<Tensor>& code, double noisy)
 	if (_use_mode[4] == true || _use_mode[5] == true)
 	{
 		Tensor c0 = code[0], c1 = code[1], mask = code[2], Alphamask = code[3], srcRGB = code[4];
-		//Tensor qAlphamask = QuantizeAlphaMask(Alphamask); //[rot,n,b*b]
-		//Tensor qRGB = subset_decode(srcRGB, c0, c1, mask);
-		//Tensor dec = torch::cat({ qRGB, qAlphamask.unsqueeze(3) }, -1); //[rot,n,b*b,4]
-
-		//dests.push_back(dec[0].unsqueeze(0)); //[n,b*b,4]
-		//dests.push_back(dec[1].index({ Slice(),Slice(),_rotation[1] }).unsqueeze(0)); //[n,b*b,4]
-		//dests.push_back(dec[2].index({ Slice(),Slice(),_rotation[2] }).unsqueeze(0)); //[n,b*b,4]
-		//dests.push_back(dec[3].index({ Slice(),Slice(),_rotation[3] }).unsqueeze(0)); //[n,b*b,4]
-
 		int maskqmax[4] = { 0,3,7,3 }, Alphamaskqmax[4] = { 0,7,3,3 }, colorqmax[4] = { 0,31,31,127 }, Alphaqmax[4] = { 0,63,63,255 };
 		std::vector<int> qidxs;
 		if (_QuantizeColor || _QuantizeMask)
@@ -176,7 +165,7 @@ Tensor BC7::decode(const std::vector<Tensor>& code, double noisy)
 		dests.push_back(subset_decode(_src, c0, c1, mask, 15, 127));
 	}
 
-	int mode7beginindex = dests.size();
+	int mode7beginindex = (int)dests.size();
 	if (_use_mode[7] == true)
 	{
 		Tensor* c0 = _code7[0];
@@ -190,15 +179,14 @@ Tensor BC7::decode(const std::vector<Tensor>& code, double noisy)
 	Tensor error = torch::sum(torch::pow(dest - this->_src, 2), { -2,-1 }); //[m,n]
 	if (_use_mode[7] == true && _mode7Type == Mode7Type::MoP && _updateMoPweight && _optimizeMode != OptimizeMode::FixConfig)
 	{
-		const float alpha = 0.2;
+		const float alpha = 0.2f;
 		Tensor new_weight = _mode7_learned_weight;
 		new_weight.index_put_({
 				_MoPIndices,
 				torch::arange(0,_MoPIndices.size(1),torch::TensorOptions().dtype(torch::kInt64).device(_device)).unsqueeze(0).broadcast_to(_MoPIndices.sizes())
 			},
-			//torch::log10(1.f / torch::sqrt(error.index({ Slice(mode7beginindex, mode7beginindex + _Ns + _Nr) }).detach())));
 			1 / error.index({ Slice(mode7beginindex, mode7beginindex + _Ns + _Nr) }).detach());
-		_mode7_learned_weight = _mode7_learned_weight * (1.0 - alpha) + new_weight * alpha;
+		_mode7_learned_weight = _mode7_learned_weight * (1.0f - alpha) + new_weight * alpha;
 	}
 	if (_modeweight == nullptr)
 	{
@@ -206,11 +194,7 @@ Tensor BC7::decode(const std::vector<Tensor>& code, double noisy)
 		if (_mode7Type == Mode7Type::BruteForce
 			|| _optimizeMode == OptimizeMode::FixConfig)
 			noisy = 0;
-		*_modeweight = GumbelMax(
-			//torch::rand(error.sizes(),error.options()),
-			1/error,
-			//torch::log10(1.f / torch::sqrt(error)),
-			noisy, 0);
+		*_modeweight = GumbelMax(1 / error, noisy, 0);
 	}
 	Tensor w = *_modeweight;
 	w = w.unsqueeze(2).unsqueeze(3);

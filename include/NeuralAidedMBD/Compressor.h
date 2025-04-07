@@ -26,8 +26,9 @@ public:
 		None = 0,
 		Mask = 0b1,
 		Color = 0b10,
-		Default = 0b11,
 		All = 0b11,
+
+		Default = 0b11,
 	};
 	enum class OptimizeMode : uint32_t
 	{
@@ -64,18 +65,8 @@ public:
 	torch::Tensor QuantizeMask(const torch::Tensor& mask, int qmax);
 	torch::Tensor QuantizeAlphaMask(const torch::Tensor& Alphamask, int Alphaqmax, int Alphamaskqmax);
 
-	/**
-	 * src => mask * v + mu
-	 * 
-	 * @param src [x,b*b,c]
-	 * @param v [x,c]
-	 * @param mu [x,c]
-	 * @param mask [x,b*b]
-	 * @param weight [x,b*b] optional
-	 */
-	void OptimizeColorsBlock(const torch::Tensor& src, torch::Tensor& max16, torch::Tensor& min16, torch::Tensor& mask, const torch::Tensor* weight = nullptr);
-	void OptimizeAlphaBlock(const torch::Tensor& srcA, torch::Tensor& Alphamax16, torch::Tensor& Alphamin16, torch::Tensor& Alphamask);
-	void subset_encode(const torch::Tensor& subset_src, torch::Tensor& c0, torch::Tensor& c1, torch::Tensor& mask, torch::Tensor* weight = nullptr);
-	torch::Tensor subset_decode(const torch::Tensor& src, const torch::Tensor& c0, const torch::Tensor& c1, const torch::Tensor& mask, int maskBits = 0, int colorBits = 0);
+	// src => mask * v + mu
+	void subset_encode(const torch::Tensor& src /*[x,b*b,c]*/, torch::Tensor& v /*[x,c]*/, torch::Tensor& mu /*[x,c]*/, torch::Tensor& mask /*[x,b*b]*/, const torch::Tensor* weight /*[x,b*b]*/ = nullptr);
+	torch::Tensor subset_decode(const torch::Tensor& src, const torch::Tensor& c0, const torch::Tensor& c1, const torch::Tensor& mask, int QuantizeMaskMaxValue = 0, int QuantizeColorMaxValue = 0);
 	torch::Tensor DTBCcodec(const torch::Tensor blockfeature, double noisy);
 };

@@ -55,9 +55,24 @@ Compressor::Compressor(at::DeviceType device,int epoch,float lr, QuantizeMode qu
 	_device = device;
 }
 
-void Compressor::subset_encode(const Tensor& subset_src/*[m,n,b*b,c]*/, Tensor& c0/*[m,n,c]*/, Tensor& c1/*[m,n,c]*/, Tensor& mask/*[m,n,b*b]*/, Tensor* weight/*[m,n,b*b]*/)
+void Compressor::subset_encode(const Tensor& src /*[x,b*b,c]*/, Tensor& v /*[x,c]*/, Tensor& mu /*[x,c]*/, Tensor& mask /*[x,b*b]*/, const Tensor* weight)
 {
-	OptimizeColorsBlock(subset_src, c0, c1, mask,weight);
+	Tensor center_src /*[x,b*b,c]*/;
+	if (weight)
+	{
+		Tensor norm_weight = *weight / (weight->sum(-1, true) + 1e-8); //[x,b*b]
+		mu = torch::matmul(norm_weight.unsqueeze(-2), src).squeeze(-2); //[x,c]<-[x,1,c] = [x,1,b*b] x [x,b*b,c]
+		center_src = src - mu.unsqueeze(-2); //[x,b*b,c]
+		center_src = torch::multiply(center_src, weight->unsqueeze(-1));
+	}
+	else
+	{
+		mu = torch::mean(src, -2); //[x,c]
+		center_src = src - mu.unsqueeze(-2); //[x,b*b,c]
+	}
+	Tensor eigenvectors = get<2>(torch::linalg::svd(center_src + 1e-5, true, {})); //[x,c,c]
+	v = eigenvectors.index({ Slice(),Slice(),0 }); //[x,c]
+	mask = torch::matmul(center_src, v.unsqueeze(-1)).squeeze(-1); //[x,b*b]<-[x,b*b,1] = [x,b*b,c] x [x,c,1]
 }
 
 Tensor Compressor::subset_decode(const torch::Tensor& src/*[m,n,b*b,c] or [n,b*b,c]*/, const Tensor& c0/*[m,n,c]*/, const Tensor& c1/*[m,n,c]*/, const Tensor& mask/*[m,n,b*b]*/, int QuantizeMaskMaxValue, int QuantizeColorMaxValue)
@@ -89,33 +104,6 @@ Tensor Compressor::subset_decode(const torch::Tensor& src/*[m,n,b*b,c] or [n,b*b
 			decmask = QuantizeMask(decmask, QuantizeMaskMaxValue);
 		return decmask.unsqueeze(-1) * c0.unsqueeze(-2) + c1.unsqueeze(-2);//[m,n,b*b,c]
 	}
-}
-
-void Compressor::OptimizeColorsBlock(const Tensor& src /*[x,b*b,c]*/, Tensor& v /*[x,c]*/, Tensor& mu /*[x,c]*/, Tensor& mask /*[x,b*b]*/, const Tensor* weight /*[x,b*b]*/)
-{
-	Tensor center_src /*[x,b*b,c]*/;
-	if (weight)
-	{
-		Tensor norm_weight = *weight / (weight->sum(-1, true) + 1e-8); //[x,b*b]
-		mu = torch::matmul(norm_weight.unsqueeze(-2), src).squeeze(-2); //[x,c]<-[x,1,c] = [x,1,b*b] x [x,b*b,c]
-		center_src = src - mu.unsqueeze(-2); //[x,b*b,c]
-		center_src = torch::multiply(center_src, weight->unsqueeze(-1));
-	}
-	else
-	{
-		mu = torch::mean(src, -2); //[x,c]
-		center_src = src - mu.unsqueeze(-2); //[x,b*b,c]
-	}
-	Tensor eigenvectors = get<2>(torch::linalg::svd(center_src + 1e-5, true, {})); //[x,c,c]
-	v = eigenvectors.index({ Slice(),Slice(),0 }); //[x,c]
-	mask = torch::matmul(center_src, v.unsqueeze(-1)).squeeze(-1); //[x,b*b]<-[x,b*b,1] = [x,b*b,c] x [x,c,1]
-}
-
-void Compressor::OptimizeAlphaBlock(const Tensor& srcA /*[m,n,b*b,1]*/, Tensor& Alphamax16 /*[m,n,1]*/, Tensor& Alphamin16 /*[m,n,1]*/, Tensor& Alphamask /*[m,n,b*b]*/)
-{
-	Alphamin16 = torch::zeros_like(torch::mean(srcA, 2));//[m,n,1]
-	Alphamax16 = torch::ones_like(Alphamin16);//[m,n,1]
-	Alphamask = srcA.squeeze(-1);//[m,n,b*b]
 }
 
 bool Compressor::DTBCLRScheduler(double cost,double& histcost,int& lr_interval,int lr_patience)

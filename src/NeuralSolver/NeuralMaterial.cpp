@@ -61,8 +61,6 @@ std::tuple<Tensor,Tensor> NeuralMaterial::getBatch(int batch_size, int tile_size
 	{
 		batch_tex = batch_tex.unfold(2, patch_size, patch_size).unfold(3, patch_size, patch_size).reshape({ batch_tex.size(0),batch_tex.size(1),-1,patch_size, patch_size }).permute({ 0,2,1,3,4 }).reshape({ -1,batch_tex.size(1),patch_size,patch_size });//[n,c,p,p]
 		batch_grid = batch_grid.unfold(1, patch_size, patch_size).unfold(2, patch_size, patch_size).unfold(3, batch_grid.size(3), batch_grid.size(3)).reshape({ -1,patch_size,patch_size,batch_grid.size(3) });//[n,p,p,2]
-		//cout << batch_tex.sizes() << endl;
-		//cout << batch_grid.sizes() << endl;
 	}
 	return { batch_tex,batch_grid };
 }
@@ -106,8 +104,6 @@ void data_generate(const char *path, const char *save_path)
 
 void NeuralMaterial::start()
 {
-	/*_data_name = {"Ground068_1K-JPG_Color.png","Ground068_1K-JPG_NormalGL_normed.png","Ground068_1K-JPG_Displacement.png","Ground068_1K-JPG_Roughness.png","Ground068_1K-JPG_AmbientOcclusion.png" };*/
-	//string objectname = "Ukulele_01";//"concrete_cat_statue";
 	_data_name = {
 		_objectname + "_diff_2k.png",
 		_objectname + "_nor_gl_2k.png",
@@ -127,15 +123,9 @@ void NeuralMaterial::start()
 	for (int i = 0; i < data_tensor.size(); ++i)
 	{
 		torch::load(data_tensor[i], "data/" + _data_name[i] + ".pth");
-		//Tensor f = torch::round(data_tensor[i] * 255.f).to(torch::kUInt8);//[h,w,c]:[0,255]
-		//f = Bc7e(f).to(data_tensor[i].dtype()) / 255.f;//[h,w,c]:[0,1]
-		//cout << _data_name[i]<<": "<<torch::pow(f - data_tensor[i], 2).mean() << endl;
-		//TensorToImage(f.unsqueeze(0).permute({ 0,3,1,2 }), ("pred/bc7e_"+ _data_name[i]).c_str());
 		if (i == 1)
 		{
 			data_tensor[i] = data_tensor[i].index({ Slice(),Slice(),Slice(0,2) });
-			//data_tensor[i] = torch::sum(torch::pow(data_tensor[i] * 2 - 1, 2), -1);
-			//cout << data_tensor[i].index({ Slice(0,4),Slice(0,4) }) << endl;
 		}
 		_data_channel[i] = (int)data_tensor[i].size(-1);
 	}

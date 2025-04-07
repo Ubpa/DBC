@@ -40,17 +40,8 @@ struct NetImpl : torch::nn::Module {
 			{
 			  printf("init the Linear parameters.\n");
 			  auto spLinear = std::dynamic_pointer_cast<torch::nn::LinearImpl>(m);
-			 /* torch::nn::init::normal_(spLinear->weight,0,0.01);*/
-			  //torch::nn::init::xavier_uniform_(spLinear->weight);
-			  //torch::nn::init::kaiming_normal_(spLinear->weight, 0, torch::kFanIn, torch::kReLU);
-			  //torch::nn::init::constant_(spLinear->bias, 0);
 			}
 		}
-		//bn1 = register_module("bn1", torch::nn::BatchNorm2d(4));
-		//bn2 = register_module("bn2", torch::nn::BatchNorm2d(4));
-		//fc0 = register_module("fc0", torch::nn::Linear(6, 16));
-		////fc1 = register_module("fc1", torch::nn::Linear(16, 16));
-		//fc2 = register_module("fc2", torch::nn::Linear(16, 8));
 	} 
 	torch::Tensor forward(torch::Tensor x/*[n,c,h,w]*/) {
 		x = x.permute({ 0,2,3,1 });//[n,h,w,c]
@@ -74,43 +65,17 @@ public:
 		char targetString[256];
 		for (int i = 0; i < feature_size.size(); ++i)
 		{
-			//features.push_back(torch::randn(feature_size[i], torch::TensorOptions().dtype(torch::kFloat32).device(_device).requires_grad(true)));
 			_features.push_back((torch::rand(feature_size[i], torch::TensorOptions().dtype(torch::kFloat32).device(_device)) * 2 - 1).clone().detach().set_requires_grad(true));
 			snprintf(targetString, sizeof(targetString), "feature %d", i);
 			register_parameter(targetString, _features[i], true);
 		}
 		bn0 = register_module("bn0", torch::nn::BatchNorm2d(4));
 	}
-	void SetupScales()
-	{
-		_scales.resize(_features.size());
-		for (int i = 0; i < _features.size(); ++i)
-		{
-			Tensor feature = _features[i].reshape({ _features[i].size(0),_features[i].size(1),-1 });
-			_scales[i] = std::get<0>(torch::max(torch::abs(feature), -1, true)).unsqueeze(-1) + 1e-6; //[1,c,1,1]
-			//cout << "_scales[" << i << "]: " << _scales[i].sizes() << endl << _scales[i] << endl;
-		}
-	}
-	std::vector<Tensor> FeatureScale()
-	{
-		SetupScales();
-
-		std::vector<Tensor> scaledfeatures;
-		scaledfeatures.resize(_features.size());
-		for (int i = 0; i < _features.size(); ++i)
-		{
-			scaledfeatures[i] = _features[i] / _scales[i]; //[1,c,h,w]
-		}
-		return scaledfeatures;
-	}
 	torch::Tensor forward(torch::Tensor batch_grid/*[n,h,w,2]*/, EncodeMode encodeMode, double noisy)
 	{
 		std::vector<torch::Tensor> tmp_features = _features; //[1,c,h,w]
 		if (encodeMode != EncodeMode::None)
 		{
-			//if(typeid(*_compressor) == typeid(BC7))
-			//	tmp_features = FeatureScale();
-
 			if ((uint32_t)encodeMode & (uint32_t)EncodeMode::DTBC)
 			{
 				for (auto& feature : tmp_features)
@@ -150,17 +115,6 @@ public:
 					}
 				}
 			}
-
-			//if (typeid(*_compressor) == typeid(BC7))
-			//{
-			//	for (int i = 0; i < tmp_features.size(); ++i)
-			//	{
-			//		Tensor scale = _scales[i];
-			//		if ((uint32_t)encodeMode & (uint32_t)EncodeMode::BC)
-			//			scale = scale.detach();
-			//		tmp_features[i] = tmp_features[i] * scale;
-			//	}
-			//}
 		}
 		for (int i = 0; i < tmp_features.size(); ++i)
 		{
@@ -173,7 +127,6 @@ public:
 		return batch_feature;
 	}
 	std::vector<torch::Tensor> _features;//[1,c,h,w]
-	std::vector<torch::Tensor> _scales;//[1,c,1,1]
 	at::DeviceType _device;
 	torch::nn::BatchNorm2d bn0{ nullptr };
 	Compressor* _compressor;

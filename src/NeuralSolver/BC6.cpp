@@ -106,7 +106,7 @@ Tensor BC6::decode(const std::vector<Tensor>& code, double noisy)
 		Tensor c0 = code[0], c1 = code[1], mask = code[2];
 		dests.push_back(subset_decode(_src, c0, c1, mask, 15, 0));
 	}
-	int mode1To10beginindex = dests.size();
+	int mode1To10beginindex = (int)dests.size();
 	if (_use_mode[0] == true)
 	{
 		Tensor* c0 = _code1To10[0];
@@ -120,14 +120,14 @@ Tensor BC6::decode(const std::vector<Tensor>& code, double noisy)
 	Tensor error = torch::sum(torch::pow(dest - this->_src, 2), { -2,-1 }); //[m,n]
 	if (_use_mode[0] == true && _mode1To10Type == Mode1To10Type::MoP && _updateMoPweight && _optimizeMode != OptimizeMode::FixConfig)
 	{
-		const float alpha = 0.2;
+		const float alpha = 0.2f;
 		Tensor new_weight = _bc6_mode1To10_learned_weight;
 		new_weight.index_put_({
 				_MoPIndices,
 				torch::arange(0,_MoPIndices.size(1),torch::TensorOptions().dtype(torch::kInt64).device(_device)).unsqueeze(0).broadcast_to(_MoPIndices.sizes())
 			},
 			1 / error.index({ Slice(mode1To10beginindex, mode1To10beginindex + _Ns + _Nr) }).detach());
-		_bc6_mode1To10_learned_weight = _bc6_mode1To10_learned_weight * (1.0 - alpha) + new_weight * alpha;
+		_bc6_mode1To10_learned_weight = _bc6_mode1To10_learned_weight * (1.0f - alpha) + new_weight * alpha;
 	}
 	if (_modeweight == nullptr)
 	{
