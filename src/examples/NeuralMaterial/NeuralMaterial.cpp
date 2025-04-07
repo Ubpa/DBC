@@ -16,11 +16,8 @@ using std::tuple;
 using std::get;
 using torch::Tensor;
 
-NeuralMaterial::NeuralMaterial(DBC_config config, int pretain,string objectname,int nm_vaild,string Fix_DBC_best_epoch,string DBC_best_epoch,int featuresize)
+NeuralMaterial::NeuralMaterial(DBC_config config, int pretain,string objectname,int featuresize)
 {
-	_Fix_DBC_best_epoch = Fix_DBC_best_epoch;
-	_DBC_best_epoch = DBC_best_epoch;
-	_vaild = nm_vaild;
 	_objectname = objectname;
 	_pretain = pretain;
 	_config = config;
@@ -132,7 +129,6 @@ void NeuralMaterial::start()
 	_train_tex = torch::cat(data_tensor, -1).to(_config._device).unsqueeze(0);//[1,h,w,c]
 	_train_tex = _train_tex.permute({ 0,3,1,2 });//[1,c,h,w]
 	_train_tex.set_requires_grad(false);
-	printlog("load pth\n");
 
 	int FeatureChannel = 4;//BC7
 	if (_config._codec_name == "BC6")
@@ -159,78 +155,23 @@ void NeuralMaterial::start()
 	int epoch2 = 10000;
 
 	int batch_size = 1;
-	if (!_vaild)
-	{
-		if (_pretain)
-			train(model, feature, optimizer, loss_fn, epoch1, batch_size, 100, 5000, EncodeMode::None);
-		else
-		{
-			torch::load(model, "pth\\" + std::to_string(_FeatureSize) + " "+ _config._codec_name + " " + _objectname + "_10000_model.pth");
-			torch::load(feature, "pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_feature.pth");
-		}
-		delete optimizer;
-		optimizer = new torch::optim::Adam(model->parameters(), torch::optim::AdamOptions(_config._lr));
-		optimizer->add_param_group(torch::optim::OptimizerParamGroup(feature->_features));
-		optimizer->param_groups()[0].options().set_lr(_config._lr);
-		optimizer->param_groups()[1].options().set_lr(_config._lr);
-		train(model, feature, optimizer, loss_fn, epoch2, batch_size, 1, 50, EncodeMode::DBC);
-	}
+	bool exist = std::filesystem::exists("pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_model.pth")
+		&& std::filesystem::exists("pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_feature.pth");
+	if (_pretain || !exist)
+		train(model, feature, optimizer, loss_fn, epoch1, batch_size, 100, 5000, EncodeMode::None);
 	else
 	{
 		torch::load(model, "pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_model.pth");
 		torch::load(feature, "pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_feature.pth");
-		valid(model, feature, loss_fn, batch_size, EncodeMode::BC);
-
-		feature->_compressor->_optimizeMode = Compressor::OptimizeMode::FixConfig;
-		feature->_compressor->_init_MoP_weight = true;
-		auto batch = getBatch(batch_size, (int)_train_tex.size(2), 0, BatchMode::MeshGrid);
-		Tensor batch_tex = get<0>(batch), batch_grid = get<1>(batch);
-		Tensor batch_feature = feature->forward(batch_grid, EncodeMode::DBC, 0.);
-		torch::load(model, "pth\\" + _config._codec_name + "_" + _objectname + "_Fix_DBC_" + _Fix_DBC_best_epoch + "_model.pth");
-		torch::load(feature, "pth\\" + _config._codec_name + "_" + _objectname + "_Fix_DBC_" + _Fix_DBC_best_epoch + "_feature.pth");
-		feature->_compressor->_init_MoP_weight = false;
-		valid(model, feature, loss_fn, batch_size, EncodeMode::DBC);
-
-		torch::load(model, "pth\\" + _config._codec_name + "_" + _objectname + "_DBC_" + _DBC_best_epoch + "_model.pth");
-		torch::load(feature, "pth\\" + _config._codec_name + "_" + _objectname + "_DBC_" + _DBC_best_epoch + "_feature.pth");
-		feature->_compressor->_optimizeMode = Compressor::OptimizeMode::DBC;
-		feature->_compressor->_init_MoP_weight = true;
-		valid(model, feature, loss_fn, batch_size, EncodeMode::DBC);
 	}
+	delete optimizer;
+	optimizer = new torch::optim::Adam(model->parameters(), torch::optim::AdamOptions(_config._lr));
+	optimizer->add_param_group(torch::optim::OptimizerParamGroup(feature->_features));
+	optimizer->param_groups()[0].options().set_lr(_config._lr);
+	optimizer->param_groups()[1].options().set_lr(_config._lr);
+	train(model, feature, optimizer, loss_fn, epoch2, batch_size, 1, 50, EncodeMode::DBC);
 }
 
-void NeuralMaterial::valid(Net& model, Feature& feature, torch::nn::MSELoss& loss_fn, int batch_size, EncodeMode encodeMode)
-{
-	string prefix = encodeMode == EncodeMode::DBC ? "DBC_" : (encodeMode == EncodeMode::BC ? "BC_" : "");
-	if (encodeMode == EncodeMode::DBC && feature->_compressor->_optimizeMode == Compressor::OptimizeMode::FixConfig)
-		prefix = "Fix_" + prefix;
-	char targetString[256];
-	feature->_compressor->_updateMoPweight = false;
-	c10::InferenceMode guard(true);
-	auto batch = getBatch(batch_size, (int)_train_tex.size(2), 0, BatchMode::MeshGrid);
-	Tensor batch_tex = get<0>(batch), batch_grid = get<1>(batch);
-	Tensor batch_feature = feature->forward(batch_grid, (EncodeMode)((uint32_t)encodeMode | (uint32_t)EncodeMode::BC), 0.);
-	Tensor pred = model->forward(batch_feature);
-	torch::Tensor loss = loss_fn(pred, batch_tex);
-	float error = loss.item().toFloat();
-	double mse = error / batch_tex.size(0);
-	double rmse = std::sqrt(mse);
-	double psnr = 20. * std::log10(1 / rmse);
-	snprintf(targetString, sizeof(targetString), "valid: mse: %f rmse: %f psnr: %f \n",
-		mse, rmse, psnr);
-	printlog(targetString);
-	int now_channel = 0;
-	for (int j = 0; j < _data_name.size(); ++j)
-	{
-		snprintf(targetString, sizeof(targetString), ("pred\\" + _config._codec_name + "_" + prefix + "pred_" + _data_name[j]).c_str());
-		Tensor imageTensor = pred.index({ Slice(),Slice(now_channel,now_channel + _data_channel[j]) });
-		if (j == 1)
-			imageTensor = torch::cat({ imageTensor,
-				torch::sqrt(1 - torch::pow((imageTensor * 2 - 1).index({ Slice(),Slice(0,1) }), 2) - torch::pow((imageTensor * 2 - 1).index({ Slice(),Slice(1,2) }), 2)) * 0.5 + 0.5 }, 1);
-		TensorToImage(imageTensor, targetString);
-		now_channel += _data_channel[j];
-	}
-}
 void NeuralMaterial::train(Net& model, Feature& feature, torch::optim::Adam* optimizer, torch::nn::MSELoss& loss_fn, int epoch, int batch_size, int print_interval, int eval_interval, EncodeMode encodeMode)
 {
 	try {

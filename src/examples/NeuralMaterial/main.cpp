@@ -41,10 +41,7 @@ int main(int argc, char* argv[])
 	Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DBC;
 	int encode_config_selection_Type = 1/*MoP*/;
 	string objectname = "lubricant_spray";
-	int pretain = 1;
-	int nm_vaild = 0;
-	string Fix_DBC_best_epoch = "";
-	string DBC_best_epoch = "";
+	int pretain = 0;
 	string nm_codec_name = "BC7";
 	int Ns = 2;
 	int Nr = 2;
@@ -64,13 +61,7 @@ int main(int argc, char* argv[])
 	if (argc > argindex)
 		pretain = std::atoi(argv[argindex++]);
 	if (argc > argindex)
-		nm_vaild = std::atoi(argv[argindex++]);
-	if (argc > argindex)
 		objectname = argv[argindex++];
-	if (argc > argindex)
-		Fix_DBC_best_epoch = argv[argindex++];
-	if (argc > argindex)
-		DBC_best_epoch = argv[argindex++];
 	if (argc > argindex)
 		nm_codec_name = argv[argindex++];
 	if (argc > argindex)
@@ -85,11 +76,10 @@ int main(int argc, char* argv[])
 	if (log)
 	{
 		char tmp[1024];
-		snprintf(tmp, sizeof(tmp), "epoch=%d lr=%.3f qMode=%d optimMode=%d MoP=%d pretain=%d nm_vaild=%d object=%s nm_codec=%s Ns=%d Nr=%d fsize=%d",
-			epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, pretain, nm_vaild, objectname.c_str(), nm_codec_name.c_str(), Ns, Nr, featuresize);
+		snprintf(tmp, sizeof(tmp), "epoch=%d lr=%.3f qMode=%d optimMode=%d MoP=%d pretain=%d object=%s nm_codec=%s Ns=%d Nr=%d fsize=%d",
+			epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, pretain, objectname.c_str(), nm_codec_name.c_str(), Ns, Nr, featuresize);
 		string filename(tmp);
 		filename = "log\\" + filename + ".txt";
-		//TxTClear(filename);
 		FILE* stream1;
 		freopen_s(&stream1, filename.c_str(), "w", stderr);
 	}
@@ -103,10 +93,7 @@ quantizeMode: %d\n\
 optimizeMode: %d\n\
 encode_config_selection_Type: %d\n\
 pretain: %d\n\
-nm_vaild: %d\n\
 objectname: %s\n\
-Fix_DBC_best_epoch: %s\n\
-DBC_best_epoch: %s\n\
 nm_codec_name: %s\n\
 Ns: %d\n\
 Nr: %d\n\
@@ -118,10 +105,7 @@ log: %d\n",
 		optimizeMode,
 		encode_config_selection_Type,
 		pretain,
-		nm_vaild,
 		objectname.c_str(),
-		Fix_DBC_best_epoch.c_str(),
-		DBC_best_epoch.c_str(),
 		nm_codec_name.c_str(),
 		Ns,
 		Nr,
@@ -147,7 +131,7 @@ log: %d\n",
 		use_mode = bc7_use_mode4567;
 
 	DBC_config config(device, epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, use_mode, nm_codec_name, Ns, Nr);
-	NeuralMaterial nm(config, pretain, objectname, nm_vaild, Fix_DBC_best_epoch, DBC_best_epoch, featuresize);
+	NeuralMaterial nm(config, pretain, objectname, featuresize);
 	nm.start();
 
 	if(log)

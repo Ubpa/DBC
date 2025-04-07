@@ -143,12 +143,11 @@ public:
 		Rand,
 		MeshGrid,
 	};
-	NeuralMaterial(DBC_config config, int pretain, string objectname,int nm_vaild, string Fix_DBC_best_epoch,string DBC_best_epoch, int featuresize);
+	NeuralMaterial(DBC_config config, int pretain, string objectname, int featuresize);
 	~NeuralMaterial() { delete _compressor; }
 	std::tuple<Tensor, Tensor> getBatch(int batch_size, int tile_size, int patch_size, BatchMode batchmode = BatchMode::Rand);
 	void start();
 	void train(Net& model, Feature& feature, torch::optim::Adam* optimizer, torch::nn::MSELoss& loss_fn, int epoch, int batch_size, int print_interval, int eval_interval, EncodeMode encodeMode);
-	void valid(Net& model, Feature& feature, torch::nn::MSELoss& loss_fn, int batch_size, EncodeMode encodeMode);
 	Tensor _train_tex;//[1,c,h,w]
 	DBC_config _config;
 	Compressor* _compressor;
@@ -156,8 +155,5 @@ public:
 	std::vector<int> _data_channel;
 	int _pretain;
 	string _objectname;
-	int _vaild;
-	string _Fix_DBC_best_epoch;
-	string _DBC_best_epoch;
 	int _FeatureSize;
 };
