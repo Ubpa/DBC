@@ -45,13 +45,11 @@ Tensor MoPSelect(const Tensor& logits, int Ns, int Nr, int dim)
 	return torch::cat({ indices_stable,indices_random }); //[Ns+Nr,n]
 }
 
-Compressor::Compressor(at::DeviceType device,int epoch,float lr, QuantizeMode quantizeMode, OptimizeMode optmizeMode)
+Compressor::Compressor(at::DeviceType device, QuantizeMode quantizeMode, OptimizeMode optmizeMode)
 {
 	_QuantizeColor = ((uint32_t)quantizeMode & (uint32_t)QuantizeMode::Color) > 0;
 	_QuantizeMask = ((uint32_t)quantizeMode & (uint32_t)QuantizeMode::Mask) > 0;
 	_optimizeMode = optmizeMode;
-	_lr = lr;
-	_epoch = epoch;
 	_device = device;
 }
 

@@ -34,7 +34,7 @@ public:
 		FixConfig,
 		DBC,
 	};
-	Compressor(at::DeviceType device, int epoch = 10, float lr = 0.1, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optmizeMode = OptimizeMode::DBC);
+	Compressor(at::DeviceType device, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optmizeMode = OptimizeMode::DBC);
 	virtual ~Compressor() {}
 
 	bool _QuantizeColor, _QuantizeMask;
@@ -49,8 +49,6 @@ public:
 	torch::Tensor _bc6_mode1To10_subset1_weight; //[k+h,n,b*b]
 	bool _init_MoP_weight = false;
 	bool _updateMoPweight = true;
-	int _epoch;
-	float _lr;
 	at::DeviceType _device = at::kCPU;
 
 	torch::Tensor forward(const torch::Tensor &src, double noisy = 1.0);

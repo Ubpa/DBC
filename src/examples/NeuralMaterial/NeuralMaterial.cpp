@@ -16,16 +16,15 @@ using std::tuple;
 using std::get;
 using torch::Tensor;
 
-NeuralMaterial::NeuralMaterial(DBC_config config, int pretain,string objectname,int featuresize)
+NeuralMaterial::NeuralMaterial(DBC_config config,string objectname,int featuresize)
 {
 	_objectname = objectname;
-	_pretain = pretain;
 	_config = config;
 	_FeatureSize = featuresize;
 	if (config._codec_name == "BC6")
-		_compressor = new BC6(config._device, config._epoch, config._lr, config._bc6_use_mode, config._quantizeMode, config._optimizeMode, config._bc6_mode1To10Type, config._Ns, config._Nr);
+		_compressor = new BC6(config._device, config._bc6_use_mode, config._quantizeMode, config._optimizeMode, config._bc6_mode1To10Type, config._Ns, config._Nr);
 	else //BC7
-		_compressor = new BC7(config._device, config._epoch, config._lr, config._bc7_use_mode, config._quantizeMode, config._optimizeMode, config._bc7_mode7Type, config._Ns, config._Nr);
+		_compressor = new BC7(config._device, config._bc7_use_mode, config._quantizeMode, config._optimizeMode, config._bc7_mode7Type, config._Ns, config._Nr);
 
 }
 
@@ -90,6 +89,7 @@ void TensorToImage(Tensor image_tensor/*[1,c,h,w]*/, const char* image_path)
 	int height = (int)image_tensor.size(0);
 	int width = (int)image_tensor.size(1);
 	int channels = (int)image_tensor.size(2);
+	printf("write image: %s\n", image_path);
 	stbi_write_png(image_path, width, height, channels, data, width * channels);
 }
 void data_generate(const char *path, const char *save_path) 
@@ -155,14 +155,15 @@ void NeuralMaterial::start()
 	int epoch2 = 10000;
 
 	int batch_size = 1;
-	bool exist = std::filesystem::exists("pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_model.pth")
-		&& std::filesystem::exists("pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_feature.pth");
-	if (_pretain || !exist)
+	string model_file = "pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_model.pth";
+	string feature_file = "pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_feature.pth";
+	bool exist = std::filesystem::exists(model_file) && std::filesystem::exists(feature_file);
+	if (!exist)
 		train(model, feature, optimizer, loss_fn, epoch1, batch_size, 100, 5000, EncodeMode::None);
 	else
 	{
-		torch::load(model, "pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_model.pth");
-		torch::load(feature, "pth\\" + std::to_string(_FeatureSize) + " " + _config._codec_name + " " + _objectname + "_10000_feature.pth");
+		torch::load(model, model_file);
+		torch::load(feature, feature_file);
 	}
 	delete optimizer;
 	optimizer = new torch::optim::Adam(model->parameters(), torch::optim::AdamOptions(_config._lr));
@@ -250,13 +251,11 @@ void NeuralMaterial::train(Net& model, Feature& feature, torch::optim::Adam* opt
 		else
 			reduceLR.step(qloss_item);
 		feature->_compressor->_init_MoP_weight = false;
-		double qcost = 0;
 		if (i % print_interval == 0 || i == 0)
 		{
 			double mse = loss_item / batch_tex.size(0);
 			double rmse = std::sqrt(mse);
 			double psnr = 20. * std::log10(1. / rmse);
-			qcost = psnr;
 			double lr_model = optimizer->param_groups()[0].options().get_lr();
 			double lr_feature = optimizer->param_groups()[1].options().get_lr();
 			int mstime = (int)std::chrono::duration_cast<std::chrono::milliseconds>(time).count();
@@ -289,7 +288,7 @@ void NeuralMaterial::train(Net& model, Feature& feature, torch::optim::Adam* opt
 					int now_channel = 0;
 					for (int j = 0; j < _data_name.size(); ++j)
 					{
-						snprintf(targetString, sizeof(targetString), ("pred\\%d " + _config._codec_name + " %d %d " + prefix + "%d_pred_" + _data_name[j]).c_str(), _FeatureSize, _config._Ns, _config._Nr, 0);
+						snprintf(targetString, sizeof(targetString), ("pred\\%d " + _config._codec_name + " %d %d " + prefix + "%d_pred_" + _data_name[j]).c_str(), _FeatureSize, _config._Ns, _config._Nr, i);
 						Tensor imageTensor = pred.index({ Slice(),Slice(now_channel,now_channel + _data_channel[j]) });
 						if (j == 1)
 							imageTensor = torch::cat({ imageTensor,
@@ -297,10 +296,9 @@ void NeuralMaterial::train(Net& model, Feature& feature, torch::optim::Adam* opt
 						TensorToImage(imageTensor, targetString);
 						now_channel += _data_channel[j];
 					}
-
-					snprintf(targetString, sizeof(targetString), ("pth\\%d " + _config._codec_name + " %d %d " + _objectname + "_"+prefix + "%d_model.pth").c_str(), _FeatureSize, _config._Ns, _config._Nr, 0);
+					snprintf(targetString, sizeof(targetString), ("pth\\%d " + _config._codec_name + " %d %d " + _objectname + "_"+prefix + "%d_model.pth").c_str(), _FeatureSize, _config._Ns, _config._Nr, i);
 					torch::save(model, targetString);
-					snprintf(targetString, sizeof(targetString), ("pth\\%d " + _config._codec_name + " %d %d " + _objectname + "_"+prefix + "%d_feature.pth").c_str(), _FeatureSize, _config._Ns, _config._Nr, 0);
+					snprintf(targetString, sizeof(targetString), ("pth\\%d " + _config._codec_name + " %d %d " + _objectname + "_"+prefix + "%d_feature.pth").c_str(), _FeatureSize, _config._Ns, _config._Nr, i);
 					torch::save(feature, targetString);
 					error_count = 0;
 					error_minmum = loss.item().toFloat();
@@ -323,8 +321,8 @@ void NeuralMaterial::train(Net& model, Feature& feature, torch::optim::Adam* opt
 			double rmse_minmum = std::sqrt(mse_minmum);
 			double psnr_minmum = 20. * std::log10(1. / rmse_minmum);
 			WriteFloat(i, (float)psnr, RMSE_path);
-			snprintf(targetString, sizeof(targetString), "Test error: %f Test error minmum : mse(%f) rmse(%f) qcost(%f) psnr(%f) psnr_minmum(%f) @%d\n",
-				loss.item().toFloat(), mse, rmse, qcost, psnr, psnr_minmum, error_minmum_index);
+			snprintf(targetString, sizeof(targetString), "Test: mse(%f) rmse(%f) psnr(%f) psnr_minmum(%f) @%d\n",
+				mse, rmse, psnr, psnr_minmum, error_minmum_index);
 			printlog(targetString);
 		}
 	}

@@ -35,82 +35,56 @@ int main(int argc, char* argv[])
 		device = at::kCPU;
 	}
 
-	int epoch = 6000;
 	float lr = 0.01f;
 	Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::Default;
 	Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DBC;
 	int encode_config_selection_Type = 1/*MoP*/;
 	string objectname = "lubricant_spray";
-	int pretain = 0;
 	string nm_codec_name = "BC7";
 	int Ns = 2;
 	int Nr = 2;
 	int featuresize = 512;
-	int log = 1;
 	int argindex = 1;
-	if (argc > argindex)
-		epoch = std::atoi(argv[argindex++]);
-	if (argc > argindex)
-		lr = (float)std::atof(argv[argindex++]);
-	if (argc > argindex)
-		quantizeMode = (Compressor::QuantizeMode)std::atoi(argv[argindex++]);
-	if (argc > argindex)
-		optimizeMode = (Compressor::OptimizeMode)std::atoi(argv[argindex++]);
-	if (argc > argindex)
-		encode_config_selection_Type = std::atoi(argv[argindex++]);
-	if (argc > argindex)
-		pretain = std::atoi(argv[argindex++]);
 	if (argc > argindex)
 		objectname = argv[argindex++];
 	if (argc > argindex)
 		nm_codec_name = argv[argindex++];
+	if (argc > argindex)
+		optimizeMode = (Compressor::OptimizeMode)std::atoi(argv[argindex++]);
+	if (argc > argindex)
+		encode_config_selection_Type = std::atoi(argv[argindex++]);
 	if (argc > argindex)
 		Ns = std::atoi(argv[argindex++]);
 	if (argc > argindex)
 		Nr = std::atoi(argv[argindex++]);
 	if (argc > argindex)
 		featuresize = std::atoi(argv[argindex++]);
-	if (argc > argindex)
-		log = std::atoi(argv[argindex++]);
 
-	if (log)
-	{
-		char tmp[1024];
-		snprintf(tmp, sizeof(tmp), "epoch=%d lr=%.3f qMode=%d optimMode=%d MoP=%d pretain=%d object=%s nm_codec=%s Ns=%d Nr=%d fsize=%d",
-			epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, pretain, objectname.c_str(), nm_codec_name.c_str(), Ns, Nr, featuresize);
-		string filename(tmp);
-		filename = "log\\" + filename + ".txt";
-		FILE* stream1;
-		freopen_s(&stream1, filename.c_str(), "w", stderr);
-	}
+	char tmp[1024];
+	snprintf(tmp, sizeof(tmp), "optimMode=%d MoP=%d object=%s nm_codec=%s Ns=%d Nr=%d fsize=%d",
+		optimizeMode, encode_config_selection_Type, objectname.c_str(), nm_codec_name.c_str(), Ns, Nr, featuresize);
+	string filename(tmp);
+	filename = "log\\" + filename + ".txt";
+	FILE* stream1;
+	freopen_s(&stream1, filename.c_str(), "w", stderr);
 
 	char targetString[1024];
 	snprintf(targetString, sizeof(targetString),
 		"[args]\n\
-epoch: %d\n\
-lr:  %f\n\
-quantizeMode: %d\n\
 optimizeMode: %d\n\
 encode_config_selection_Type: %d\n\
-pretain: %d\n\
 objectname: %s\n\
 nm_codec_name: %s\n\
 Ns: %d\n\
 Nr: %d\n\
-featuresize: %d\n\
-log: %d\n",
-		epoch,
-		lr,
-		quantizeMode,	
+featuresize: %d\n",
 		optimizeMode,
 		encode_config_selection_Type,
-		pretain,
 		objectname.c_str(),
 		nm_codec_name.c_str(),
 		Ns,
 		Nr,
-		featuresize,
-		log);
+		featuresize);
 	printlog(targetString);
 
 	bool bc7_use_mode4[8] = { 0,0,0,0,1,0,0,0 };
@@ -130,12 +104,11 @@ log: %d\n",
 	else //BC7
 		use_mode = bc7_use_mode4567;
 
-	DBC_config config(device, epoch, lr, quantizeMode, optimizeMode, encode_config_selection_Type, use_mode, nm_codec_name, Ns, Nr);
-	NeuralMaterial nm(config, pretain, objectname, featuresize);
+	DBC_config config(device, lr, quantizeMode, optimizeMode, encode_config_selection_Type, use_mode, nm_codec_name, Ns, Nr);
+	NeuralMaterial nm(config, objectname, featuresize);
 	nm.start();
 
-	if(log)
-		fclose(stderr);
+	fclose(stderr);
 
 	return 0;
 }

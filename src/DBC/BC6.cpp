@@ -10,7 +10,7 @@ using torch::Tensor;
 using namespace torch::indexing;
 using namespace torch::autograd;
 
-BC6::BC6(at::DeviceType device, int epoch, float lr, bool* use_mode, QuantizeMode quantizeMode, OptimizeMode optimizeMode, Mode1To10Type mode1To10Type,int Ns,int Nr) : Compressor(device, epoch, lr, quantizeMode, optimizeMode) {
+BC6::BC6(at::DeviceType device, bool* use_mode, QuantizeMode quantizeMode, OptimizeMode optimizeMode, Mode1To10Type mode1To10Type,int Ns,int Nr) : Compressor(device, quantizeMode, optimizeMode) {
 	_code11To14.resize(3);
 	_mode1To10Type = mode1To10Type;
 	for (int i = 0; i < 2; ++i)

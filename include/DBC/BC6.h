@@ -11,7 +11,7 @@ public:
 		MoP, // Mixture of Partitions
 	};
 
-	BC6(at::DeviceType device, int epoch = 10, float lr = 0.1, bool* use_mode = nullptr, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optimizeMode = OptimizeMode::DBC, Mode1To10Type mode1To10Type = Mode1To10Type::MoP, int Ns = 2, int Nr = 2);
+	BC6(at::DeviceType device, bool* use_mode = nullptr, QuantizeMode quantizeMode = QuantizeMode::None, OptimizeMode optimizeMode = OptimizeMode::DBC, Mode1To10Type mode1To10Type = Mode1To10Type::MoP, int Ns = 2, int Nr = 2);
 
 	virtual ~BC6()
 	{

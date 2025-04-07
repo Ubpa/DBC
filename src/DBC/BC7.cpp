@@ -10,7 +10,7 @@ using torch::Tensor;
 using namespace torch::indexing;
 using namespace torch::autograd;
 
-BC7::BC7(at::DeviceType device, int epoch, float lr, bool* use_mode, QuantizeMode quantizeMode, OptimizeMode optimizeMode, Mode7Type mode7Type,int Ns,int Nr) : Compressor(device, epoch, lr, quantizeMode, optimizeMode) {
+BC7::BC7(at::DeviceType device, bool* use_mode, QuantizeMode quantizeMode, OptimizeMode optimizeMode, Mode7Type mode7Type,int Ns,int Nr) : Compressor(device, quantizeMode, optimizeMode) {
 	_code456.resize(8);
 	_rotation = _rotation.to(device);
 	_rotationRGB = _rotationRGB.to(device);
