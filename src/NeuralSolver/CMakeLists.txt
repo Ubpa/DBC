@@ -26,12 +26,7 @@ Ubpa_AddTarget(
   INC
     "${PROJECT_SOURCE_DIR}/include"
   LIB
-    Ubpa::UMBD_CeresSolver
-	Ubpa::UMBD_IO
-    Ubpa::CMakeLibTorch_bc7e
     "${TORCH_LIBRARIES}"
-  LIB_PRIVATE
-    Ceres::ceres
   C_OPTION_PRIVATE
     ${c_options_private}
 )

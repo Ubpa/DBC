@@ -93,10 +93,6 @@ public:
 
 	torch::Tensor forward(const torch::Tensor &src, double noisy = 1.0);
 	torch::Tensor backward(const torch::Tensor &gradinput);
-	virtual void MBDOptim(UMBD::FCompressedData& compressedData, const UMBD::FFirstOrderFunction* mbdf, const UMBD::FTex3D &f);
-	virtual void BC1DOptim(UMBD::FCompressedData& compressedData, const UMBD::FFirstOrderFunction* mbdf, const UMBD::FTex3D &f);
-	virtual void BCOptim(UMBD::FCompressedData& compressedData, const UMBD::FFirstOrderFunction* mbdf, const UMBD::FTex3D &f);
-	static void GetCTex(UMBD::FCompressedData& compressedData, std::string name);
 	bool DTBCLRScheduler(double cost,double& histcost,int& lr_interval,int lr_patience);
 
 

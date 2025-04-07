@@ -29,9 +29,8 @@ inline Tensor BlockToTensor(Tensor tensor/*[N, b*b, c]*/, int block_size, torch:
 
 struct DTBC_config
 {
-	DTBC_config(at::DeviceType device = at::kCPU, int run_mode = 1, int epoch = 6000, float lr = 0.1f, Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::None, Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DTBC, int encode_config_selection_Type = 1/*MoP*/, bool* use_mode = nullptr, std::string codec_name = "BC6", int Ns = 2, int Nr = 2)
+	DTBC_config(at::DeviceType device = at::kCPU, int epoch = 6000, float lr = 0.1f, Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::None, Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DTBC, int encode_config_selection_Type = 1/*MoP*/, bool* use_mode = nullptr, std::string codec_name = "BC6", int Ns = 2, int Nr = 2)
 	{
-		_run_mode = run_mode;
 		_epoch = epoch;
 		_lr = lr;
 		_quantizeMode = quantizeMode;
@@ -65,7 +64,6 @@ struct DTBC_config
 			}
 		}
 	}
-	int _run_mode;
 	int _epoch;
 	float _lr;
 	Compressor::QuantizeMode _quantizeMode;
@@ -80,24 +78,10 @@ struct DTBC_config
 	int _Nr;
 };
 
-void Bc7e(UMBD::FTex3D& Tex);
-/*[h, w, c]*/
-torch::Tensor Bc7e(torch::Tensor src);
-/*[c,d,h,w]*/
-torch::Tensor nvtt_bc3(torch::Tensor src/*[c,d,h,w]*/);
 /*[c,d,h,w]*/
 torch::Tensor nvtt_bc6(torch::Tensor src/*[c,d,h,w]*/);
 /*[c,d,h,w]*/
 torch::Tensor nvtt_bc7(torch::Tensor src/*[c,d,h,w]*/);
-void nvtt_bc7(UMBD::FTex3D& Tex);
-float EvaluateError(const UMBD::FTex3D& f, const UMBD::FTex3D& approx_f);
-UMBD::FTex3D GetErrorTex(const UMBD::FTex3D& f, const UMBD::FTex3D& approx_f, float MaxError);
-UMBD::FTex3D GetSHVisTex(const UMBD::FTex3D& f);
-void GetCompTex(UMBD::FTex3D& tex1, UMBD::FTex3D& tex2, std::string name);
-
-//[n,b*b,c]
-torch::Tensor TexToBlock(const UMBD::FTex3D& Tex, int64_t BlockSize, int64_t BlockChannels, at::Device device);
-void BlockToTex(UMBD::FTex3D& Tex, const torch::Tensor& blockin, int64_t BlockSize, int64_t BlockChannels);
 
 bool IsFileExist(const char* filepath);
 
