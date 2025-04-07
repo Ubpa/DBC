@@ -3,19 +3,13 @@ cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 project(DBC VERSION 1.0.0)
 message(STATUS "[Project] ${PROJECT_NAME}")
 
-include(cmake/InitUCMake.cmake)
-Ubpa_InitUCMake(VERSION 0.6.4)
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
+include(UbpaInit)
 
 Ubpa_InitProject()
 
 find_package(Torch REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
-
-Ubpa_AddDep(UMBD 5.3.3)
-
-option(Ubpa_Template_UsingSharedLibrary "using shared library" OFF)
-
-set(SolverPath "${PROJECT_SOURCE_DIR}/src/Solver")
 
 function(Ubpa_TorchCopyDll TargetName)
   # The following code block is suggested to be used on Windows.
@@ -32,11 +26,3 @@ function(Ubpa_TorchCopyDll TargetName)
 endfunction()
 
 Ubpa_AddSubDirsRec(src)
-
-Ubpa_BuildDoc(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
-
-Ubpa_Export(
-  TARGET
-  DIRECTORIES
-    "include"
-)

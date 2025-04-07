@@ -2,7 +2,6 @@
 #include <torch/torch.h>
 #include <iostream>
 #include <string>
-#include <UMBD_ext/UMBDCeresSolver.h>
 
 enum class EncodeMode : uint32_t
 {

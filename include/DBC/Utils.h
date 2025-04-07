@@ -1,5 +1,4 @@
 #pragma once
-#include <UMBD/UMBDSolver.h>
 #include <torch/torch.h>
 #include <DBC/BC7.h>
 #include <DBC/BC6.h>
