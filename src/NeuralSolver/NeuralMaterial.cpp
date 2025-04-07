@@ -16,17 +16,6 @@ using std::tuple;
 using std::get;
 using torch::Tensor;
 
-ExponentialLR::ExponentialLR(torch::optim::Optimizer& optimizer, float gamma) 
-	: torch::optim::LRScheduler(optimizer), _gamma(gamma) {}
-
-std::vector<double> ExponentialLR::get_lrs()
-{
-	std::vector<double> lrs = get_current_lrs();
-	for (int i = 0; i < lrs.size(); ++i)
-		lrs[i] *= _gamma;
-	return lrs;
-}
-
 NeuralMaterial::NeuralMaterial(DTBC_config config, int pretain,string objectname,int nm_vaild,string Fix_DTBC_best_epoch,string DTBC_best_epoch,int featuresize)
 {
 	_Fix_DTBC_best_epoch = Fix_DTBC_best_epoch;

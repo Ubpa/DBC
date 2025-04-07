@@ -135,7 +135,7 @@ Tensor BC6::decode(const std::vector<Tensor>& code, double noisy)
 		if (_mode1To10Type == Mode1To10Type::BruteForce
 			|| _optimizeMode == OptimizeMode::FixConfig)
 			noisy = 0;
-		*_modeweight = AutoMax(-error, /*tau*/ 0, noisy, true, 0);
+		*_modeweight = GumbelMax(-error, noisy, 0);
 	}
 	Tensor w = *_modeweight;
 	w = w.unsqueeze(2).unsqueeze(3);

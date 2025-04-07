@@ -3,6 +3,11 @@
 #include <fstream>
 #include <iostream>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <NeuralAidedMBD/stb_image.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <NeuralAidedMBD/stb_image_write.h>
+
 using std::cout;
 using std::endl;
 using torch::indexing::Slice;
@@ -88,8 +93,8 @@ torch::Tensor nvtt_bc7(torch::Tensor src/*[c,d,h,w]*/)
 	nvtt::Surface decimage;
 	if (!decimage.setImage3D(compform, inputImage.width, inputImage.height, inputImage.depth, outputData.data()))
 		std::cerr << "load the DDS file failed!" << std::endl;
-	if (!decimage.save("image/nvtt_bc7_test.tga", true))
-		std::cerr << "save failed" << std::endl;
+	//if (!decimage.save("image/nvtt_bc7_test.tga", true))
+	//	std::cerr << "save failed" << std::endl;
 	torch::Tensor dst = torch::zeros(src.sizes(), c10::TensorOptions().device(at::kCPU).dtype(torch::kFloat).requires_grad(false)).contiguous();
 	memcpy_s(dst.data_ptr(), sizeof(float) * dst.numel(), decimage.data(), sizeof(float) * dst.numel());
 	return dst * 255.f;//[c,d,h,w]
@@ -102,32 +107,28 @@ bool IsFileExist(const char* filepath)
 
 std::string ToString(const std::vector<float> Values, const std::string& Split)
 {
-	std::ostringstream oss; // 创建一个字符串流对象
+	std::ostringstream oss;
 
 	for (size_t i = 0; i < Values.size(); ++i) {
-		oss << Values[i]; // 将当前值写入字符串流
+		oss << Values[i];
 		if (i < Values.size() - 1) {
-			oss << Split; // 如果不是最后一个元素，添加分隔符
+			oss << Split;
 		}
 	}
 
-	return oss.str(); // 返回构建的字符串
+	return oss.str();
 }
 
 void SaveStringToFile(const std::string& String, const char* FilePath)
 {
-	// 创建一个输出文件流
 	std::ofstream OutFile(FilePath);
 
-	// 检查文件是否成功打开
 	if (!OutFile) {
 		std::cerr << "Error opening file: " << FilePath << std::endl;
 		return;
 	}
 
-	// 将字符串写入文件
 	OutFile << String;
 
-	// 关闭文件
 	OutFile.close();
 }

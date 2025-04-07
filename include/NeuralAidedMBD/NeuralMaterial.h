@@ -208,11 +208,3 @@ public:
 	string _DTBC_best_epoch;
 	int _FeatureSize;
 };
-
-class ExponentialLR : public torch::optim::LRScheduler {
- public:
-	 ExponentialLR(torch::optim::Optimizer& optimizer, float gamma);
- private:
-  std::vector<double> get_lrs() override;
-  float _gamma;
-};

@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	Compressor::QuantizeMode quantizeMode = Compressor::QuantizeMode::Default;
 	Compressor::OptimizeMode optimizeMode = Compressor::OptimizeMode::DTBC;
 	int encode_config_selection_Type = 1/*MoP*/;
-	string objectname = "Ukulele_01";
+	string objectname = "lubricant_spray";
 	int pretain = 1;
 	int nm_vaild = 0;
 	string Fix_DTBC_best_epoch = "";

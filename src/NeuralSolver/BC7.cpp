@@ -206,11 +206,11 @@ Tensor BC7::decode(const std::vector<Tensor>& code, double noisy)
 		if (_mode7Type == Mode7Type::BruteForce
 			|| _optimizeMode == OptimizeMode::FixConfig)
 			noisy = 0;
-		*_modeweight = AutoMax(
+		*_modeweight = GumbelMax(
 			//torch::rand(error.sizes(),error.options()),
 			1/error,
 			//torch::log10(1.f / torch::sqrt(error)),
-			/*tau*/ 0, noisy, true, 0);
+			noisy, 0);
 	}
 	Tensor w = *_modeweight;
 	w = w.unsqueeze(2).unsqueeze(3);
