@@ -27,7 +27,7 @@ function(Ubpa_TorchCopyDll TargetName)
                        POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
                        ${TORCH_DLLS}
-                       $<TARGET_FILE_DIR:${TargetName}>)
+                       ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
   endif (MSVC)
 endfunction()
 
