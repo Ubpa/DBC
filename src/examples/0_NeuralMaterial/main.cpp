@@ -10,7 +10,7 @@
 //#include "tqdm.h"
 #include <DBC/BC7.h>
 #include <DBC/Utils.h>
-#include <DBC/NeuralMaterial.h>
+#include "NeuralMaterial.h"
 
 //#include <cublas_v2.h>
 using std::cout;

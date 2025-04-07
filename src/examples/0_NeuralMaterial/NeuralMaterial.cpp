@@ -1,6 +1,6 @@
-#include "DBC/NeuralMaterial.h"
-#include "DBC/stb_image.h"
-#include "DBC/stb_image_write.h"
+#include "NeuralMaterial.h"
+#include <DBC/stb_image.h>
+#include <DBC/stb_image_write.h>
 #include <iostream>
 #include <string>
 #include <cmath>
