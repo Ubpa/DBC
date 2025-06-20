@@ -1,4 +1,12 @@
-# DBC
+# Differentiable Block Compression for Neural Texture
+
+EGSR 2025
+
+Authors
+
+- Tao Zhuang: Tencent Technology (Shenzhen) Co., LTD
+- Wentao Liu: USTC
+- Ligang Liu: USTC
 
 ## Environment
 
