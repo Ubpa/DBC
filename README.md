@@ -2,11 +2,30 @@
 
 EGSR 2025
 
+36th Eurographics Symposium on Rendering
+
+PDF: [Eurographics Digital Library](https://diglib.eg.org/items/9dfee807-eeec-485a-82a6-f466268d28c2)
+
 Authors
 
 - Tao Zhuang: Tencent Technology (Shenzhen) Co., LTD
-- Wentao Liu: USTC
-- Ligang Liu: USTC
+- Wentao Liu: University of Science and Technology
+- Ligang Liu: University of Science and Technology
+
+Citation
+```
+@inproceedings{10.2312:sr.20251199,
+booktitle = {Eurographics Symposium on Rendering},
+editor = {Wang, Beibei and Wilkie, Alexander},
+title = {{Differentiable Block Compression for Neural Texture}},
+author = {Zhuang, Tao and Liu, Wentao and Liu, Ligang},
+year = {2025},
+publisher = {The Eurographics Association},
+ISSN = {1727-3463},
+ISBN = {978-3-03868-292-9},
+DOI = {10.2312/sr.20251199}
+}
+```
 
 ## Environment
 
