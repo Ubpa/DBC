@@ -29,12 +29,12 @@ DOI = {10.2312/sr.20251199}
 
 ## Environment
 
-- CUDA 12.4.1
+- CUDA 12.8.1
 
   > Additionally, it is necessary to install Nsight NVTX from CUDA 11.8.
   > Reference: Reply from user Te93 in [Failed to find nvToolsExt - C++ - PyTorch Forums](https://discuss.pytorch.org/t/failed-to-find-nvtoolsext/179635/2)
 
-- LibTorch 2.4.1
+- LibTorch 2.7.1
 
 - VS 2022 latest
 

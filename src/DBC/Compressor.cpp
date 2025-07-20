@@ -68,7 +68,7 @@ void Compressor::subset_encode(const Tensor& src /*[x,b*b,c]*/, Tensor& v /*[x,c
 		mu = torch::mean(src, -2); //[x,c]
 		center_src = src - mu.unsqueeze(-2); //[x,b*b,c]
 	}
-	Tensor eigenvectors = get<2>(torch::linalg::svd(center_src + 1e-5, true, {})); //[x,c,c]
+	Tensor eigenvectors = get<2>(torch::linalg_svd(center_src + 1e-5, true, {})); //[x,c,c]
 	v = eigenvectors.index({ Slice(),Slice(),0 }); //[x,c]
 	mask = torch::matmul(center_src, v.unsqueeze(-1)).squeeze(-1); //[x,b*b]<-[x,b*b,1] = [x,b*b,c] x [x,c,1]
 }
